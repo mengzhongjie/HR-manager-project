@@ -73,6 +73,27 @@
                 </div>
             </div>
 
+            <!-- Interview Invitation Response -->
+            <div th:if="${candidate.status.name() == 'INTERVIEW_INVITED'}" class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4>面试邀约</h4>
+                </div>
+                <div class="card-body">
+                    <p>您已收到面试邀请，请确认是否参加：</p>
+                    <form th:each="iv : ${interviews}" th:if="${iv.result.name() == 'PENDING'}"
+                          th:action="@{'/seeker/interview/' + ${iv.id} + '/respond'}" method="post" style="display:inline">
+                        <input type="hidden" name="accept" value="true">
+                        <button type="submit" class="btn btn-success me-2">接受面试</button>
+                    </form>
+                    <form th:each="iv : ${interviews}" th:if="${iv.result.name() == 'PENDING'}"
+                          th:action="@{'/seeker/interview/' + ${iv.id} + '/respond'}" method="post" style="display:inline">
+                        <input type="hidden" name="accept" value="false">
+                        <button type="submit" class="btn btn-danger">拒绝面试</button>
+                    </form>
+                    <div th:if="${#lists.size(interviews) == 0}" class="text-muted">等待HR安排面试...</div>
+                </div>
+            </div>
+
             <!-- Offer -->
             <div th:if="${offer != null}" class="card shadow mb-4">
                 <div class="card-header bg-success text-white">
@@ -87,11 +108,11 @@
                         <span th:if="${offer.accepted == false}" class="badge bg-danger">已拒绝</span>
                     </p>
                     <div th:if="${offer.accepted == null}">
-                        <form action="/seeker/offer/__${offer.id}__/respond" method="post" style="display:inline">
+                        <form th:action="@{'/seeker/offer/' + ${offer.id} + '/respond'}" method="post" style="display:inline">
                             <input type="hidden" name="accept" value="true">
                             <button type="submit" class="btn btn-success">接受Offer</button>
                         </form>
-                        <form action="/seeker/offer/__${offer.id}__/respond" method="post" style="display:inline">
+                        <form th:action="@{'/seeker/offer/' + ${offer.id} + '/respond'}" method="post" style="display:inline">
                             <input type="hidden" name="accept" value="false">
                             <button type="submit" class="btn btn-danger">拒绝Offer</button>
                         </form>
