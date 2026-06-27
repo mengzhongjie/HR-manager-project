@@ -34,3 +34,6 @@ build/
 
 # Local configuration (API keys, secrets)
 **/application-local.properties
+
+# Uploaded resume files
+uploads/

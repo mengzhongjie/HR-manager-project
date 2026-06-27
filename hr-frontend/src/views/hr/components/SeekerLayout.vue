@@ -1,5 +1,5 @@
 <template>
-  <el-container style="min-height: 100vh;">
+  <el-container style="min-height: calc(100vh - 48px);">
     <el-header style="background: #409eff; padding: 0;">
       <div style="display: flex; align-items: center; height: 60px; padding: 0 20px; color: #fff;">
         <el-menu
