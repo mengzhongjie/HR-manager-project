@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local configuration (API keys, secrets)
+**/application-local.properties
