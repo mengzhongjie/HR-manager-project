@@ -1,0 +1,181 @@
+/* ============================================
+   HR Manager System - Custom Styles
+   ============================================ */
+
+/* === Status Badge Color System === */
+/* 8 states mapping to distinct visual colors */
+.badge-status-new { background-color: #0d6efd; color: #fff; }          /* blue */
+.badge-status-pending_archive { background-color: #ffc107; color: #212529; } /* yellow */
+.badge-status-interview_invited { background-color: #6610f2; color: #fff; }  /* purple */
+.badge-status-in_interview { background-color: #fd7e14; color: #fff; }  /* orange */
+.badge-status-waiting_offer { background-color: #6c757d; color: #fff; } /* gray */
+.badge-status-offered { background-color: #198754; color: #fff; }      /* green */
+.badge-status-onboarded { background-color: #212529; color: #fff; }    /* dark */
+.badge-status-rejected { background-color: #dc3545; color: #fff; }     /* red */
+
+/* Custom purple (used in interview section header) */
+.bg-purple { background-color: #6f42c1 !important; }
+
+/* === Card Enhancements === */
+.card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+.card-header h4, .card-header h5 {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+
+/* Dashboard stat cards */
+.stat-card {
+    border-left: 4px solid #0d6efd;
+    border-radius: 0.5rem;
+}
+.stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+.stat-card.stat-new { border-left-color: #0d6efd; }
+.stat-card.stat-archive { border-left-color: #ffc107; }
+.stat-card.stat-interview { border-left-color: #fd7e14; }
+.stat-card.stat-onboarded { border-left-color: #198754; }
+
+/* Position selection cards */
+.position-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.position-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+.position-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* === Navigation === */
+.navbar .nav-link {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease;
+}
+.navbar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* === Table Enhancements === */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.04);
+}
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* === Tech Stack Tags === */
+.tech-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    margin: 0.1rem;
+    font-size: 0.8rem;
+    border-radius: 0.25rem;
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* === Filter Panel === */
+.filter-panel {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.filter-panel .form-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+/* === Toast Notification === */
+.toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+}
+.toast {
+    min-width: 250px;
+}
+
+/* === Upload Area === */
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+}
+.upload-area:hover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.04);
+}
+.upload-area.dragover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.08);
+}
+
+/* === Progress Bar === */
+.progress-wrapper {
+    margin-top: 1rem;
+}
+.progress-wrapper .progress-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* === Empty State === */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+.empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* === Loading Spinner === */
+.spinner-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 9998;
+    justify-content: center;
+    align-items: center;
+}
+.spinner-overlay.active {
+    display: flex;
+}
+
+/* === Responsive Fixes === */
+@media (max-width: 768px) {
+    .container { padding-left: 1rem; padding-right: 1rem; }
+    .table-responsive-stack td { display: block; text-align: right; }
+    .table-responsive-stack td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+    }
+}

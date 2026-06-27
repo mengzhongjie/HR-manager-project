@@ -9,6 +9,7 @@ import com.wangmian.hr_manager_project.model.enums.CandidateStatus;
 import com.wangmian.hr_manager_project.repository.CandidateRepository;
 import com.wangmian.hr_manager_project.repository.InterviewRecordRepository;
 import com.wangmian.hr_manager_project.service.OfferService;
+import com.wangmian.hr_manager_project.service.CandidateService;
 import com.wangmian.hr_manager_project.service.SeekerService;
 import com.wangmian.hr_manager_project.service.resume.ResumeParseQueueService;
 import com.wangmian.hr_manager_project.service.resume.ResumeValidationService;
@@ -31,6 +32,7 @@ public class SeekerController {
     private static final Logger log = LoggerFactory.getLogger(SeekerController.class);
 
     private final SeekerService seekerService;
+    private final CandidateService candidateService;
     private final ResumeValidationService resumeValidationService;
     private final ResumeParseQueueService parseQueueService;
     private final FileStorageUtil fileStorageUtil;
@@ -39,11 +41,13 @@ public class SeekerController {
     private final OfferService offerService;
     private final ObjectMapper mapper;
 
-    public SeekerController(SeekerService seekerService, ResumeValidationService resumeValidationService,
+    public SeekerController(SeekerService seekerService, CandidateService candidateService,
+                            ResumeValidationService resumeValidationService,
                             ResumeParseQueueService parseQueueService, FileStorageUtil fileStorageUtil,
                             CandidateRepository candidateRepository, InterviewRecordRepository interviewRepository,
                             OfferService offerService) {
         this.seekerService = seekerService;
+        this.candidateService = candidateService;
         this.resumeValidationService = resumeValidationService;
         this.parseQueueService = parseQueueService;
         this.fileStorageUtil = fileStorageUtil;
@@ -148,15 +152,10 @@ public class SeekerController {
                                    HttpSession session, RedirectAttributes ra) {
         try {
             InterviewRecord interview = interviewRepository.findById(id).orElseThrow();
-            Candidate candidate = candidateRepository.findById(interview.getCandidateId()).orElseThrow();
-            if (accept) {
-                candidate.setStatus(CandidateStatus.IN_INTERVIEW);
-                ra.addFlashAttribute("success", "已接受面试邀约");
-            } else {
-                candidate.setStatus(CandidateStatus.REJECTED);
-                ra.addFlashAttribute("success", "已拒绝面试邀约");
-            }
-            candidateRepository.save(candidate);
+            CandidateStatus newStatus = accept ? CandidateStatus.IN_INTERVIEW : CandidateStatus.REJECTED;
+            candidateService.updateStatus(interview.getCandidateId(), newStatus, "SEEKER",
+                    accept ? "求职者接受面试邀约" : "求职者拒绝面试邀约");
+            ra.addFlashAttribute("success", accept ? "已接受面试邀约" : "已拒绝面试邀约");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "操作失败: " + e.getMessage());
         }
