@@ -4,13 +4,25 @@ import com.wangmian.hr_manager_project.model.document.Candidate;
 import com.wangmian.hr_manager_project.model.document.InterviewRecord;
 import com.wangmian.hr_manager_project.model.document.Offer;
 import com.wangmian.hr_manager_project.model.document.Onboarding;
+import com.wangmian.hr_manager_project.model.document.Position;
 import com.wangmian.hr_manager_project.model.dto.ApiResponse;
 import com.wangmian.hr_manager_project.model.dto.CandidateFilterDTO;
 import com.wangmian.hr_manager_project.model.enums.CandidateStatus;
+import com.wangmian.hr_manager_project.model.enums.InterviewResult;
+import com.wangmian.hr_manager_project.model.enums.InterviewRound;
+import com.wangmian.hr_manager_project.model.enums.InterviewStatus;
+import com.wangmian.hr_manager_project.model.event.PositionChangeEvent;
+import com.wangmian.hr_manager_project.repository.CandidateRepository;
+import com.wangmian.hr_manager_project.repository.InterviewRecordRepository;
+import com.wangmian.hr_manager_project.repository.PositionRepository;
 import com.wangmian.hr_manager_project.service.CandidateService;
 import com.wangmian.hr_manager_project.service.InterviewService;
 import com.wangmian.hr_manager_project.service.OfferService;
 import com.wangmian.hr_manager_project.service.OnboardingService;
+import com.wangmian.hr_manager_project.service.PositionCacheService;
+import com.wangmian.hr_manager_project.service.PositionEventService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,17 +33,32 @@ import java.util.Map;
 @RequestMapping("/api/hr")
 public class HrApiController {
 
+    private static final Logger log = LoggerFactory.getLogger(HrApiController.class);
+
     private final CandidateService candidateService;
     private final InterviewService interviewService;
     private final OfferService offerService;
     private final OnboardingService onboardingService;
+    private final PositionRepository positionRepository;
+    private final CandidateRepository candidateRepository;
+    private final InterviewRecordRepository interviewRecordRepository;
+    private final PositionCacheService positionCacheService;
+    private final PositionEventService positionEventService;
 
     public HrApiController(CandidateService candidateService, InterviewService interviewService,
-                           OfferService offerService, OnboardingService onboardingService) {
+                           OfferService offerService, OnboardingService onboardingService,
+                           PositionRepository positionRepository, CandidateRepository candidateRepository,
+                           InterviewRecordRepository interviewRecordRepository,
+                           PositionCacheService positionCacheService, PositionEventService positionEventService) {
         this.candidateService = candidateService;
         this.interviewService = interviewService;
         this.offerService = offerService;
         this.onboardingService = onboardingService;
+        this.positionRepository = positionRepository;
+        this.candidateRepository = candidateRepository;
+        this.interviewRecordRepository = interviewRecordRepository;
+        this.positionCacheService = positionCacheService;
+        this.positionEventService = positionEventService;
     }
 
     // ========== 仪表盘 ==========
@@ -42,10 +69,13 @@ public class HrApiController {
         return ResponseEntity.ok(ApiResponse.success(candidateService.getAllPositions()));
     }
 
-    /** 岗位候选人统计 */
+    /** 岗位候选人统计（从 Position 集合读取岗位列表，同步岗位管理） */
     @GetMapping("/positions/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPositionStats() {
-        List<String> positions = candidateService.getAllPositions();
+        List<String> positions = positionRepository.findAll().stream()
+                .map(Position::getName)
+                .filter(p -> p != null && !p.isEmpty())
+                .toList();
         Map<String, Long> countMap = new java.util.LinkedHashMap<>();
         Map<String, Map<String, Long>> statusMap = new java.util.LinkedHashMap<>();
         for (String pos : positions) {
@@ -100,6 +130,98 @@ public class HrApiController {
             return ResponseEntity.ok(ApiResponse.success("AI资质评定完成"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("AI评定失败: " + e.getMessage()));
+        }
+    }
+
+    /** 发送面试邀请（含预约面试时间） */
+    @PostMapping("/candidates/{id}/invite-interview")
+    public ResponseEntity<ApiResponse<InterviewRecord>> inviteInterview(
+            @PathVariable String id,
+            @RequestParam(required = false) String interviewDate) {
+        try {
+            Candidate candidate = candidateRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("候选人不存在"));
+
+            // 自动确定下一轮
+            List<InterviewRecord> existing = interviewRecordRepository.findByCandidateIdOrderByRoundAsc(id);
+            InterviewRound nextRound = InterviewRound.ROUND_1;
+            if (existing.stream().anyMatch(r -> r.getRound() == InterviewRound.ROUND_1 && r.getResult() == InterviewResult.PASSED)) {
+                nextRound = InterviewRound.ROUND_2;
+            }
+            if (existing.stream().anyMatch(r -> r.getRound() == InterviewRound.ROUND_2 && r.getResult() == InterviewResult.PASSED)) {
+                nextRound = InterviewRound.ROUND_3;
+            }
+
+            // 更新候选人状态
+            candidateService.updateStatus(id, CandidateStatus.INTERVIEW_INVITED, "HR",
+                    "发送第" + switch (nextRound) {
+                        case ROUND_1 -> "一";
+                        case ROUND_2 -> "二";
+                        case ROUND_3 -> "三";
+                    } + "轮面试邀请");
+
+            // 创建面试记录（interviewStatus=PENDING，不设result，面试结束后才填）
+            InterviewRecord record = new InterviewRecord();
+            record.setCandidateId(id);
+            record.setCandidateName(candidate.getName());
+            record.setCandidatePosition(candidate.getPosition());
+            record.setRound(nextRound);
+            record.setInterviewStatus(InterviewStatus.PENDING);
+            if (interviewDate != null && !interviewDate.isBlank()) {
+                java.time.LocalDate date = java.time.LocalDate.parse(interviewDate);
+                if (!date.isAfter(java.time.LocalDate.now())) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("面试日期必须在今天之后"));
+                }
+                record.setInterviewDate(date);
+            }
+            InterviewRecord saved = interviewRecordRepository.save(record);
+
+            log.info("Interview invitation sent: {} round={} date={}", candidate.getName(), nextRound, interviewDate);
+            return ResponseEntity.ok(ApiResponse.success(saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("邀请失败: " + e.getMessage()));
+        }
+    }
+
+    /** 开始面试（面试官进入） */
+    @PutMapping("/interviews/{id}/start")
+    public ResponseEntity<ApiResponse<InterviewRecord>> startInterview(@PathVariable String id) {
+        try {
+            InterviewRecord record = interviewRecordRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("面试记录不存在"));
+            record.setInterviewStatus(InterviewStatus.IN_PROGRESS);
+            InterviewRecord saved = interviewRecordRepository.save(record);
+            log.info("Interview started: {}", id);
+            return ResponseEntity.ok(ApiResponse.success(saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("操作失败: " + e.getMessage()));
+        }
+    }
+
+    /** 结束面试（面试官完成，填写评分/反馈/结果） */
+    @PutMapping("/interviews/{id}/complete")
+    public ResponseEntity<ApiResponse<InterviewRecord>> completeInterview(
+            @PathVariable String id,
+            @RequestParam InterviewResult result,
+            @RequestParam(required = false) Integer score,
+            @RequestParam(required = false) String feedback) {
+        try {
+            InterviewRecord record = interviewRecordRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("面试记录不存在"));
+            record.setInterviewStatus(InterviewStatus.COMPLETED);
+            record.setResult(result);
+            if (score != null) record.setScore(score);
+            if (feedback != null) record.setFeedback(feedback);
+            // 面试记录先保存（评分/反馈/结果）
+            InterviewRecord saved = interviewRecordRepository.save(record);
+
+            // 推进候选人状态（通过状态机校验，失败则回滚）
+            interviewService.saveInterview(saved);
+
+            log.info("Interview completed: {} result={} score={}", id, result, score);
+            return ResponseEntity.ok(ApiResponse.success(saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("操作失败: " + e.getMessage()));
         }
     }
 
@@ -208,5 +330,71 @@ public class HrApiController {
         return onboardingService.findByCandidateId(candidateId)
                 .map(o -> ResponseEntity.ok(ApiResponse.success(o)))
                 .orElse(ResponseEntity.ok(ApiResponse.success(null)));
+    }
+
+    // ========== 岗位管理（CRUD） ==========
+
+    /** 岗位列表（旁路缓存） */
+    @GetMapping("/positions/list")
+    public ResponseEntity<ApiResponse<List<Position>>> listPositions() {
+        return ResponseEntity.ok(ApiResponse.success(positionCacheService.getPositions(
+                () -> positionRepository.findAll())));
+    }
+
+    /** 创建岗位 */
+    @PostMapping("/positions")
+    public ResponseEntity<ApiResponse<Position>> createPosition(@RequestBody Position position) {
+        if (position.getName() == null || position.getName().isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("岗位名称不能为空"));
+        }
+        if (positionRepository.existsByName(position.getName())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("岗位名称已存在"));
+        }
+        position.setCreatedAt(java.time.LocalDateTime.now());
+        position.setUpdatedAt(java.time.LocalDateTime.now());
+        Position saved = positionRepository.save(position);
+        positionEventService.handlePositionChange(
+                new PositionChangeEvent("CREATED", saved.getId(), saved.getName()));
+        return ResponseEntity.ok(ApiResponse.success(saved));
+    }
+
+    /** 更新岗位 */
+    @PutMapping("/positions/{id}")
+    public ResponseEntity<ApiResponse<Position>> updatePosition(
+            @PathVariable String id, @RequestBody Position position) {
+        Position existing = positionRepository.findById(id).orElse(null);
+        if (existing == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("岗位不存在"));
+        }
+        if (position.getName() != null && !position.getName().isBlank()) {
+            existing.setName(position.getName());
+        }
+        if (position.getDescription() != null) existing.setDescription(position.getDescription());
+        if (position.getDepartment() != null) existing.setDepartment(position.getDepartment());
+        if (position.getRequirements() != null) existing.setRequirements(position.getRequirements());
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        Position updated = positionRepository.save(existing);
+        positionEventService.handlePositionChange(
+                new PositionChangeEvent("UPDATED", id, updated.getName()));
+        return ResponseEntity.ok(ApiResponse.success(updated));
+    }
+
+    /** 删除岗位 */
+    @DeleteMapping("/positions/{id}")
+    public ResponseEntity<ApiResponse<String>> deletePosition(@PathVariable String id) {
+        Position position = positionRepository.findById(id).orElse(null);
+        if (position == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("岗位不存在"));
+        }
+        // 检查是否有关联候选人
+        long count = candidateRepository.countByPosition(position.getName());
+        if (count > 0) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "该岗位下有 " + count + " 名候选人，请先处理后再删除"));
+        }
+        positionRepository.deleteById(id);
+        positionEventService.handlePositionChange(
+                new PositionChangeEvent("DELETED", id, position.getName()));
+        return ResponseEntity.ok(ApiResponse.success("删除成功"));
     }
 }

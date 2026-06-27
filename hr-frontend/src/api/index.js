@@ -25,12 +25,15 @@ http.interceptors.response.use(
 
 // ===== 求职端 API =====
 export const seekerApi = {
-  login(params) { return http.post('/seeker/login', null, { params }) },
+  demoLogin() { return http.post('/seeker/demo') },
   getStatus(id) { return http.get(`/seeker/${id}/status`) },
   canSubmit(id) { return http.get(`/seeker/${id}/can-submit`) },
-  uploadResume(formData) { return http.post('/resume/upload', formData) },
   respondInterview(id, accept) { return http.put(`/interview/${id}/respond`, null, { params: { accept } }) },
-  respondOffer(id, accept) { return http.put(`/offer/${id}/respond`, null, { params: { accept } }) }
+  respondOffer(id, accept) { return http.put(`/offer/${id}/respond`, null, { params: { accept } }) },
+  updateCandidate(candidateId, data) { return http.put(`/seeker/candidate/${candidateId}`, data) },
+  // 同步解析 + 提交
+  parseResumeSync(formData) { return http.post('/resume/parse-sync', formData) },
+  submitCandidate(data) { return http.post('/resume/submit', data) }
 }
 
 // ===== HR 端 API =====
@@ -41,6 +44,9 @@ export const hrApi = {
   getCandidate(id) { return http.get(`/hr/candidates/${id}`) },
   updateStatus(id, params) { return http.put(`/hr/candidates/${id}/status`, null, { params }) },
   aiQualify(id) { return http.post(`/hr/candidates/${id}/ai-qualify`) },
+  inviteInterview(id, params) { return http.post(`/hr/candidates/${id}/invite-interview`, null, { params }) },
+  startInterview(id) { return http.put(`/hr/interviews/${id}/start`) },
+  completeInterview(id, params) { return http.put(`/hr/interviews/${id}/complete`, null, { params }) },
   getBackupList(position) { return http.get(`/hr/positions/${position}/backup`) },
   restoreCandidate(id) { return http.put(`/hr/candidates/${id}/restore`) },
   getInterviews() { return http.get('/hr/interviews') },
@@ -51,7 +57,27 @@ export const hrApi = {
   getOffers() { return http.get('/hr/offers') },
   getCandidateOffer(candidateId) { return http.get(`/hr/candidates/${candidateId}/offer`) },
   createOnboarding(offerId, data) { return http.post('/hr/onboarding', data, { params: { offerId } }) },
-  getCandidateOnboarding(candidateId) { return http.get(`/hr/candidates/${candidateId}/onboarding`) }
+  getCandidateOnboarding(candidateId) { return http.get(`/hr/candidates/${candidateId}/onboarding`) },
+  // 岗位CRUD
+  getPositionList() { return http.get('/hr/positions/list') },
+  createPosition(data) { return http.post('/hr/positions', data) },
+  updatePosition(id, data) { return http.put(`/hr/positions/${id}`, data) },
+  deletePosition(id) { return http.delete(`/hr/positions/${id}`) }
+}
+
+// SSE 岗位变更事件订阅
+export function subscribePositionEvents(onEvent) {
+  const source = new EventSource('/api/hr/positions/events')
+  source.addEventListener('position-change', (event) => {
+    try {
+      if (onEvent) onEvent(JSON.parse(event.data))
+    } catch (e) { /* ignore parse errors */ }
+  })
+  source.addEventListener('connected', () => {
+    console.log('SSE connected for position events')
+  })
+  source.onerror = () => { /* EventSource auto-reconnects */ }
+  return () => source.close()
 }
 
 export default http

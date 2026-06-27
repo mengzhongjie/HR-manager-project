@@ -35,6 +35,11 @@ public class OfferService {
             throw new IllegalStateException("候选人状态不是WAITING_OFFER，无法发放Offer");
         }
 
+        if (offer.getOfferDate() != null && offer.getExpiryDate() != null
+                && !offer.getExpiryDate().isAfter(offer.getOfferDate())) {
+            throw new IllegalArgumentException("截止日期必须晚于Offer发送日期");
+        }
+
         offer.setCandidateId(candidateId);
         offer.setCandidateName(candidate.getName());
         offer.setCandidatePosition(candidate.getPosition());

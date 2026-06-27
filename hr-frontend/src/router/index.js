@@ -12,6 +12,11 @@ const routes = [
     name: 'SeekerStatus',
     component: () => import('../views/seeker/StatusView.vue')
   },
+  {
+    path: '/seeker/apply/:position',
+    name: 'SeekerApply',
+    component: () => import('../views/seeker/ApplyView.vue')
+  },
   { path: '/seeker', redirect: '/seeker/upload' },
 
   // ===== HR 管理端 =====
@@ -64,6 +69,11 @@ const routes = [
     path: '/hr/onboarding/create/:offerId',
     name: 'HrOnboardingForm',
     component: () => import('../views/hr/OnboardingFormView.vue')
+  },
+  {
+    path: '/hr/positions/manage',
+    name: 'HrPositionManage',
+    component: () => import('../views/hr/PositionManageView.vue')
   },
 
   // 默认重定向到求职端

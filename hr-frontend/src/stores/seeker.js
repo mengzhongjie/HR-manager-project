@@ -15,7 +15,7 @@ export const useSeekerStore = defineStore('seeker', () => {
     localStorage.setItem('seekerName', name)
   }
 
-  /** 确保有求职者身份，没有则自动创建演示账号 */
+  /** 确保有求职者身份：自动创建演示账号，无登录页面 */
   async function ensureSeeker() {
     if (initialized.value) return
 
@@ -29,25 +29,12 @@ export const useSeekerStore = defineStore('seeker', () => {
       return
     }
 
-    // 自动创建演示求职者
-    const demoUser = 'demo_' + Date.now()
+    // 自动获取演示求职者
     try {
-      const seeker = await seekerApi.login({
-        username: demoUser,
-        name: '演示用户',
-        email: 'demo@example.com',
-        phone: '13800138000'
-      })
+      const seeker = await seekerApi.demoLogin()
       setSeeker(seeker.id, seeker.name)
     } catch {
-      // fallback: 使用固定 demo 账号
-      const seeker = await seekerApi.login({
-        username: 'demo',
-        name: '演示用户',
-        email: 'demo@example.com',
-        phone: '13800138000'
-      })
-      setSeeker(seeker.id, seeker.name)
+      setSeeker('demo', '演示用户')
     }
   }
 

@@ -61,7 +61,13 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- PDFBox (PDF validation + text extraction) -->
+		<!-- RabbitMQ (事件广播) -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-amqp</artifactId>
+			</dependency>
+
+			<!-- PDFBox (PDF validation + text extraction) -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>

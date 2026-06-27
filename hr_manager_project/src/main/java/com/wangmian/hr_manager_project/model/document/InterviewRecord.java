@@ -2,6 +2,7 @@ package com.wangmian.hr_manager_project.model.document;
 
 import com.wangmian.hr_manager_project.model.enums.InterviewResult;
 import com.wangmian.hr_manager_project.model.enums.InterviewRound;
+import com.wangmian.hr_manager_project.model.enums.InterviewStatus;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -19,6 +20,7 @@ public class InterviewRecord {
     private InterviewRound round;
     private String interviewerName;
     private LocalDate interviewDate;
+    private InterviewStatus interviewStatus;
     private InterviewResult result;
     private Integer score;
     private String feedback;

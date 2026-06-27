@@ -3,7 +3,7 @@
     <!-- 全局模块导航栏 -->
     <header class="global-header">
       <div class="header-left">
-        <span class="brand">HR 管理系统</span>
+        <span class="brand">{{ isSeeker ? '求职系统' : 'HR管理端' }}</span>
       </div>
       <div class="header-right">
         <el-button

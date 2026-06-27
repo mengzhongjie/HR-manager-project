@@ -4,9 +4,12 @@ import com.wangmian.hr_manager_project.model.document.Candidate;
 import com.wangmian.hr_manager_project.model.document.Candidate.AiQualification;
 import com.wangmian.hr_manager_project.model.document.Candidate.StatusHistoryEntry;
 import com.wangmian.hr_manager_project.model.document.InterviewRecord;
+import com.wangmian.hr_manager_project.model.document.Position;
 import com.wangmian.hr_manager_project.model.enums.*;
 import com.wangmian.hr_manager_project.repository.CandidateRepository;
+import static com.wangmian.hr_manager_project.model.enums.InterviewStatus.COMPLETED;
 import com.wangmian.hr_manager_project.repository.InterviewRecordRepository;
+import com.wangmian.hr_manager_project.repository.PositionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -24,11 +27,14 @@ public class DataInitializer implements CommandLineRunner {
 
     private final CandidateRepository candidateRepository;
     private final InterviewRecordRepository interviewRepository;
+    private final PositionRepository positionRepository;
 
     public DataInitializer(CandidateRepository candidateRepository,
-                           InterviewRecordRepository interviewRepository) {
+                           InterviewRecordRepository interviewRepository,
+                           PositionRepository positionRepository) {
         this.candidateRepository = candidateRepository;
         this.interviewRepository = interviewRepository;
+        this.positionRepository = positionRepository;
     }
 
     @Override
@@ -39,6 +45,16 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         log.info("Initializing seed data...");
+
+        // Seed positions
+        if (positionRepository.count() == 0) {
+            Position p1 = new Position(); p1.setName("Java后端工程师"); p1.setDepartment("技术部"); p1.setDescription("负责后端系统开发"); p1.setCreatedAt(LocalDateTime.now()); p1.setUpdatedAt(LocalDateTime.now());
+            Position p2 = new Position(); p2.setName("前端工程师"); p2.setDepartment("技术部"); p2.setDescription("负责前端页面开发"); p2.setCreatedAt(LocalDateTime.now()); p2.setUpdatedAt(LocalDateTime.now());
+            Position p3 = new Position(); p3.setName("产品经理"); p3.setDepartment("产品部"); p3.setDescription("负责产品规划"); p3.setCreatedAt(LocalDateTime.now()); p3.setUpdatedAt(LocalDateTime.now());
+            positionRepository.save(p1);
+            positionRepository.save(p2);
+            positionRepository.save(p3);
+        }
 
         // Position 1: Java后端工程师
         Candidate c1 = createCandidate("张三", "zhangsan@email.com", "13800138001",
@@ -79,6 +95,7 @@ public class DataInitializer implements CommandLineRunner {
         iv1.setInterviewerName("王面试官");
         iv1.setInterviewDate(LocalDate.now().minusDays(7));
         iv1.setResult(InterviewResult.PASSED);
+        iv1.setInterviewStatus(COMPLETED);
         iv1.setScore(85);
         iv1.setFeedback("技术基础扎实，项目经验丰富");
         interviewRepository.save(iv1);
@@ -93,6 +110,7 @@ public class DataInitializer implements CommandLineRunner {
         iv2.setResult(InterviewResult.PASSED);
         iv2.setScore(80);
         iv2.setFeedback("业务理解深入，沟通表达流畅");
+        iv2.setInterviewStatus(COMPLETED);
         interviewRepository.save(iv2);
 
         // Position 2: 前端工程师
@@ -147,7 +165,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         log.info("Seed data initialized: {} candidates, {} positions",
-                candidateRepository.count(), candidateRepository.findDistinctPositionBy().size());
+                candidateRepository.count(), candidateRepository.findDistinctPositions().size());
     }
 
     private Candidate createCandidate(String name, String email, String phone,

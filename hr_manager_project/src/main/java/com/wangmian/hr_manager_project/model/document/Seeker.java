@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @Document(collection = "seekers")
@@ -14,7 +16,7 @@ public class Seeker {
     private String name;
     private String email;
     private String phone;
-    private String activeCandidateId;
+    private Map<String, String> positionCandidates = new HashMap<>();
     private int submissionCount;
     private LocalDateTime createdAt;
 

@@ -15,6 +15,10 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>HR管理端</span>
           </el-menu-item>
+          <el-menu-item index="/hr/positions/manage">
+            <el-icon><Briefcase /></el-icon>
+            <span>岗位管理</span>
+          </el-menu-item>
           <el-menu-item index="/hr/interviews">
             <el-icon><Notebook /></el-icon>
             <span>面试管理</span>
@@ -49,6 +53,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/hr/offers/pending')) return '/hr/offers/pending'
   if (path.startsWith('/hr/offers')) return '/hr/offers'
   if (path.startsWith('/hr/interviews')) return '/hr/interviews'
+  if (path.startsWith('/hr/positions/manage')) return '/hr/positions/manage'
   return '/hr'
 })
 </script>

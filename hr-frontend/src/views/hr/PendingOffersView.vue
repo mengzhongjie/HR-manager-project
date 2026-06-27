@@ -13,7 +13,9 @@
           <template #default="{ row }"><StatusBadge :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="yearsOfExperience" label="工作年限" />
-        <el-table-column prop="educationLevel" label="学历" />
+        <el-table-column label="学历">
+          <template #default="{ row }">{{ eduLabel(row.educationLevel) }}</template>
+        </el-table-column>
         <el-table-column label="技术栈" min-width="180">
           <template #default="{ row }">
             <el-tag v-for="s in row.techStack" :key="s" size="small" style="margin: 2px;">{{ s }}</el-tag>
@@ -37,6 +39,8 @@ import StatusBadge from './components/StatusBadge.vue'
 
 const loading = ref(false)
 const candidates = ref([])
+const eduLabelMap = { HIGH_SCHOOL: '高中', ASSOCIATE: '大专', BACHELOR: '本科', MASTER: '硕士', PHD: '博士' }
+function eduLabel(e) { return eduLabelMap[e] || e }
 
 onMounted(async () => {
   loading.value = true

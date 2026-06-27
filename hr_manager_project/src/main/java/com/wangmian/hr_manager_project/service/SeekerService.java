@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,21 +41,29 @@ public class SeekerService {
         return saved;
     }
 
-    public boolean canSubmit(String seekerId) {
-        Seeker seeker = seekerRepository.findById(seekerId).orElse(null);
-        if (seeker == null) return true;
-        if (seeker.getActiveCandidateId() == null) return true;
-        Optional<Candidate> active = candidateRepository.findById(seeker.getActiveCandidateId());
-        if (active.isEmpty()) return true;
-        CandidateStatus status = active.get().getStatus();
-        boolean canSubmit = status == CandidateStatus.PENDING_ARCHIVE || status == CandidateStatus.REJECTED;
-        log.debug("Seeker {} canSubmit: {} (status={})", seekerId, canSubmit, status);
-        return canSubmit;
+    /** 检查能否投递指定岗位：该岗位没有进行中的候选人 */
+    public boolean canSubmit(String seekerId, String position) {
+        List<Candidate> existing = candidateRepository.findBySeekerIdAndPosition(seekerId, position);
+        for (Candidate c : existing) {
+            CandidateStatus s = c.getStatus();
+            // 进行中的状态不允许重复投递
+            if (s != CandidateStatus.PENDING_ARCHIVE && s != CandidateStatus.REJECTED) {
+                log.debug("Seeker {} cannot submit for {}: existing candidate status={}", seekerId, position, s);
+                return false;
+            }
+        }
+        return true;
     }
 
-    public void linkCandidate(String seekerId, String candidateId) {
+    /** 检查求职者ID是否有效 */
+    public boolean exists(String seekerId) {
+        return seekerRepository.existsById(seekerId);
+    }
+
+    /** 关联求职者和候选人（岗位维度） */
+    public void linkCandidate(String seekerId, String candidateId, String position) {
         Seeker seeker = seekerRepository.findById(seekerId).orElseThrow();
-        seeker.setActiveCandidateId(candidateId);
+        seeker.getPositionCandidates().put(position, candidateId);
         seeker.setSubmissionCount(seeker.getSubmissionCount() + 1);
         seekerRepository.save(seeker);
     }

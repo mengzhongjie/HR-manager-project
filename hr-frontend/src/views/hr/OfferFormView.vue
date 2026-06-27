@@ -14,7 +14,8 @@
           <el-date-picker v-model="form.offerDate" type="date" placeholder="选择日期" style="width: 100%;" />
         </el-form-item>
         <el-form-item label="截止日期" prop="expiryDate">
-          <el-date-picker v-model="form.expiryDate" type="date" placeholder="选择日期" style="width: 100%;" />
+          <el-date-picker v-model="form.expiryDate" type="date" placeholder="选择日期" style="width: 100%;"
+            :disabled-date="d => form.offerDate ? d <= form.offerDate : false" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
@@ -53,7 +54,14 @@ const form = reactive({
 const rules = {
   offeredSalary: [{ required: true, message: '请填写薪资' }],
   offerDate: [{ required: true, message: '请选择日期' }],
-  expiryDate: [{ required: true, message: '请选择截止日期' }]
+  expiryDate: [
+    { required: true, message: '请选择截止日期' },
+    { validator: (rule, val, cb) => {
+        if (val && form.offerDate && val <= form.offerDate) {
+          cb(new Error('截止日期必须晚于Offer发送日期'))
+        } else { cb() }
+      }, trigger: 'change' }
+  ]
 }
 
 onMounted(async () => {

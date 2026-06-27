@@ -47,7 +47,7 @@ public class CandidateService {
     }
 
     public List<String> getAllPositions() {
-        return candidateRepository.findDistinctPositionBy();
+        return candidateRepository.findDistinctPositions();
     }
 
     public List<Candidate> filterByPosition(String position, CandidateFilterDTO filter) {
@@ -118,27 +118,36 @@ public class CandidateService {
         switch (from) {
             case NEW -> {
                 if (to != CandidateStatus.PENDING_ARCHIVE && to != CandidateStatus.INTERVIEW_INVITED && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("NEW状态只能转为PENDING_ARCHIVE/INTERVIEW_INVITED/REJECTED");
+                    throw new IllegalStateException("NEW只能转为存档/邀请面试/淘汰");
             }
             case INTERVIEW_INVITED -> {
                 if (to != CandidateStatus.IN_INTERVIEW && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("INTERVIEW_INVITED状态只能转为IN_INTERVIEW/REJECTED");
+                    throw new IllegalStateException("邀约中只能转为面试中/淘汰");
             }
             case IN_INTERVIEW -> {
-                if (to != CandidateStatus.WAITING_OFFER && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("IN_INTERVIEW状态只能转为WAITING_OFFER/REJECTED");
+                if (to != CandidateStatus.ROUND_1_PASSED && to != CandidateStatus.ROUND_2_PASSED
+                        && to != CandidateStatus.WAITING_OFFER && to != CandidateStatus.REJECTED)
+                    throw new IllegalStateException("面试中只能转为对应轮次通过/待Offer/淘汰");
+            }
+            case ROUND_1_PASSED -> {
+                if (to != CandidateStatus.INTERVIEW_INVITED && to != CandidateStatus.REJECTED)
+                    throw new IllegalStateException("一面通过只能转为下一轮邀约/淘汰");
+            }
+            case ROUND_2_PASSED -> {
+                if (to != CandidateStatus.INTERVIEW_INVITED && to != CandidateStatus.REJECTED)
+                    throw new IllegalStateException("二面通过只能转为下一轮邀约/淘汰");
             }
             case WAITING_OFFER -> {
                 if (to != CandidateStatus.OFFERED && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("WAITING_OFFER状态只能转为OFFERED/REJECTED");
+                    throw new IllegalStateException("待发Offer只能转为已发Offer/淘汰");
             }
             case OFFERED -> {
                 if (to != CandidateStatus.ONBOARDED && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("OFFERED状态只能转为ONBOARDED/REJECTED");
+                    throw new IllegalStateException("已发Offer只能转为已入职/淘汰");
             }
             case PENDING_ARCHIVE -> {
                 if (to != CandidateStatus.NEW && to != CandidateStatus.REJECTED)
-                    throw new IllegalStateException("PENDING_ARCHIVE状态只能转为NEW/REJECTED");
+                    throw new IllegalStateException("备选库只能转为新候选人/淘汰");
             }
             case ONBOARDED, REJECTED -> throw new IllegalStateException("终态不可变更");
         }

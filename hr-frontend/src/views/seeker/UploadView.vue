@@ -2,9 +2,7 @@
   <SeekerLayout>
     <el-card shadow="never">
       <template #header>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 18px; font-weight: 600;">投递简历</span>
-        </div>
+        <span style="font-size: 18px; font-weight: 600;">选择岗位投递</span>
       </template>
 
       <div v-if="!canSubmit" style="text-align: center; padding: 40px 0;">
@@ -12,130 +10,77 @@
         <p style="color: #e6a23c; margin-top: 16px; font-size: 16px;">
           {{ message || '您当前有一份简历正在被HR处理中，请等待处理结果后再投递' }}
         </p>
+        <el-button type="primary" @click="$router.push('/seeker/status')" style="margin-top: 16px;">
+          查看投递状态
+        </el-button>
       </div>
 
-      <div v-else>
-        <div
-          class="upload-area"
-          @dragover.prevent="dragover = true"
-          @dragleave="dragover = false"
-          @drop.prevent="handleDrop"
-          @click="triggerUpload"
-          :class="{ 'upload-active': dragover }"
-          style="border: 2px dashed #d9d9d9; border-radius: 8px; padding: 60px 20px; text-align: center; cursor: pointer; transition: all .3s;"
-        >
-          <el-icon :size="48" color="#909399"><UploadFilled /></el-icon>
-          <p style="color: #666; margin-top: 12px;">将 PDF 简历拖拽到此处，或点击上传</p>
-          <p style="color: #999; font-size: 12px;">支持 PDF 格式，最大 10MB</p>
-        </div>
-
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".pdf,application/pdf"
-          style="display: none"
-          @change="handleFileChange"
-        />
-
-        <div v-if="selectedFile" style="margin-top: 20px;">
-          <el-alert :title="'已选择文件: ' + selectedFile.name" type="info" :closable="false" show-icon />
-          <el-button type="primary" @click="handleUpload" :loading="uploading" style="margin-top: 16px; width: 100%;">
-            {{ uploading ? '上传中...' : '开始上传' }}
-          </el-button>
-        </div>
-
-        <div v-if="uploadProgress > 0" style="margin-top: 16px;">
-          <el-progress :percentage="uploadProgress" :status="uploadStatus" />
-        </div>
+      <div v-else v-loading="loading">
+        <el-empty v-if="!positions.length" description="暂无开放岗位" />
+        <el-row v-else :gutter="20">
+          <el-col v-for="p in positions" :key="p.name" :xs="24" :sm="12" :md="8" :lg="6" style="margin-bottom: 20px;">
+            <el-card shadow="hover" class="position-card" @click="$router.push(`/seeker/apply/${p.name}`)">
+              <div style="text-align: center; padding: 20px 0;">
+                <el-icon :size="40" color="#409eff"><Briefcase /></el-icon>
+                <h3 style="margin: 12px 0 4px;">{{ p.name }}</h3>
+                <p v-if="p.department" style="color: #909399; font-size: 13px; margin: 0;">{{ p.department }}</p>
+              </div>
+              <div v-if="p.description" style="font-size: 13px; color: #666; margin-bottom: 12px; text-align: center;">
+                {{ p.description }}
+              </div>
+              <template #footer>
+                <el-button type="primary" style="width: 100%;" @click.stop="$router.push(`/seeker/apply/${p.name}`)">
+                  投递简历
+                </el-button>
+              </template>
+            </el-card>
+          </el-col>
+        </el-row>
       </div>
     </el-card>
   </SeekerLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { seekerApi } from '../../api'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { seekerApi, hrApi, subscribePositionEvents } from '../../api'
 import { useSeekerStore } from '../../stores/seeker'
 import SeekerLayout from '../hr/components/SeekerLayout.vue'
 
 const store = useSeekerStore()
-const fileInput = ref(null)
-const selectedFile = ref(null)
+const loading = ref(false)
 const canSubmit = ref(true)
 const message = ref('')
-const uploading = ref(false)
-const uploadProgress = ref(0)
-const uploadStatus = ref('')
-const dragover = ref(false)
+const positions = ref([])
+let cleanupSse = null
 
 onMounted(async () => {
   await store.ensureSeeker()
   try {
-    canSubmit.value = await seekerApi.canSubmit(store.seekerId)
+    const result = await seekerApi.canSubmit(store.seekerId)
+    canSubmit.value = result.canSubmit
+    if (canSubmit.value) {
+      loading.value = true
+      positions.value = await hrApi.getPositionList()
+    }
   } catch (e) {
     canSubmit.value = false
+  } finally {
+    loading.value = false
   }
+
+  // SSE 实时同步岗位列表
+  cleanupSse = subscribePositionEvents(() => {
+    if (canSubmit.value) {
+      hrApi.getPositionList().then(list => { positions.value = list })
+    }
+  })
 })
 
-function triggerUpload() {
-  fileInput.value?.click()
-}
-
-function handleDrop(e) {
-  dragover.value = false
-  const file = e.dataTransfer.files[0]
-  validateAndSelect(file)
-}
-
-function handleFileChange(e) {
-  const file = e.target.files[0]
-  validateAndSelect(file)
-}
-
-function validateAndSelect(file) {
-  if (!file) return
-  if (file.type !== 'application/pdf') {
-    ElMessage.error('请选择 PDF 格式的文件')
-    return
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.error('文件大小超过 10MB 限制')
-    return
-  }
-  selectedFile.value = file
-}
-
-async function handleUpload() {
-  if (!selectedFile.value || !store.seekerId) return
-  uploading.value = true
-  uploadProgress.value = 0
-  uploadStatus.value = ''
-
-  const formData = new FormData()
-  formData.append('file', selectedFile.value)
-  formData.append('seekerId', store.seekerId)
-
-  // Simulate upload progress
-  const progressInterval = setInterval(() => {
-    if (uploadProgress.value < 90) {
-      uploadProgress.value += Math.random() * 15
-    }
-  }, 300)
-
-  try {
-    await seekerApi.uploadResume(formData)
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
-    uploadStatus.value = 'success'
-    ElMessage.success('简历上传成功，正在解析中')
-    selectedFile.value = null
-  } catch (e) {
-    clearInterval(progressInterval)
-    uploadProgress.value = 0
-    uploadStatus.value = 'exception'
-  } finally {
-    uploading.value = false
-  }
-}
+onUnmounted(() => { if (cleanupSse) cleanupSse() })
 </script>
+
+<style scoped>
+.position-card { cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.position-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,.1) !important; }
+</style>

@@ -43,18 +43,20 @@ public class InterviewService {
         Candidate candidate = candidateRepository.findById(interview.getCandidateId())
                 .orElseThrow(() -> new IllegalArgumentException("候选人不存在"));
 
-        // Validate round order
+        // Validate round order (检查是否有任意一条上一轮记录是通过的，防止重复数据导致非唯一结果错误)
         if (interview.getRound() == InterviewRound.ROUND_2) {
-            Optional<InterviewRecord> round1 = interviewRepository.findByCandidateIdAndRound(
+            List<InterviewRecord> prev = interviewRepository.findCandidateIdAndRound(
                     interview.getCandidateId(), InterviewRound.ROUND_1);
-            if (round1.isEmpty() || round1.get().getResult() != InterviewResult.PASSED) {
+            boolean passed = prev.stream().anyMatch(r -> r.getResult() == InterviewResult.PASSED);
+            if (prev.isEmpty() || !passed) {
                 throw new IllegalStateException("一面未通过，无法进入二面");
             }
         }
         if (interview.getRound() == InterviewRound.ROUND_3) {
-            Optional<InterviewRecord> round2 = interviewRepository.findByCandidateIdAndRound(
+            List<InterviewRecord> prev = interviewRepository.findCandidateIdAndRound(
                     interview.getCandidateId(), InterviewRound.ROUND_2);
-            if (round2.isEmpty() || round2.get().getResult() != InterviewResult.PASSED) {
+            boolean passed = prev.stream().anyMatch(r -> r.getResult() == InterviewResult.PASSED);
+            if (prev.isEmpty() || !passed) {
                 throw new IllegalStateException("二面未通过，无法进入三面");
             }
         }
@@ -72,20 +74,24 @@ public class InterviewService {
         };
         candidate.setInterviewRound(roundNum);
 
-        // Auto-advance status based on result
-        if (candidate.getStatus() == CandidateStatus.INTERVIEW_INVITED || candidate.getStatus() == CandidateStatus.NEW) {
-            candidate.setStatus(CandidateStatus.IN_INTERVIEW);
-        }
+        // 邀约/接受流程由 invite-interview + 求职者响应处理
+        // 此处只根据面试结果推进状态
 
         if (interview.getResult() == InterviewResult.FAILED) {
             String reason = "第" + roundNum + "面未通过";
             candidate = candidateService.updateStatus(candidate.getId(), CandidateStatus.REJECTED, "HR", reason);
-        } else if (interview.getResult() == InterviewResult.PASSED && interview.getRound() == InterviewRound.ROUND_3) {
-            // Three rounds passed -> move to WAITING_OFFER
-            String reason = "三面通过，等待发放Offer";
-            candidate = candidateService.updateStatus(candidate.getId(), CandidateStatus.WAITING_OFFER, "HR", reason);
-        } else {
-            candidateRepository.save(candidate);
+        } else if (interview.getResult() == InterviewResult.PASSED) {
+            CandidateStatus newStatus = switch (interview.getRound()) {
+                case ROUND_1 -> CandidateStatus.ROUND_1_PASSED;
+                case ROUND_2 -> CandidateStatus.ROUND_2_PASSED;
+                case ROUND_3 -> CandidateStatus.WAITING_OFFER;
+            };
+            String reason = switch (interview.getRound()) {
+                case ROUND_1 -> "一面通过";
+                case ROUND_2 -> "二面通过";
+                case ROUND_3 -> "三面通过，等待发放Offer";
+            };
+            candidate = candidateService.updateStatus(candidate.getId(), newStatus, "HR", reason);
         }
 
         log.info("Interview saved: {} round={} result={}", interview.getCandidateName(), interview.getRound(), interview.getResult());

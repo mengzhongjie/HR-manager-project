@@ -11,7 +11,6 @@ import com.wangmian.hr_manager_project.repository.InterviewRecordRepository;
 import com.wangmian.hr_manager_project.service.OfferService;
 import com.wangmian.hr_manager_project.service.CandidateService;
 import com.wangmian.hr_manager_project.service.SeekerService;
-import com.wangmian.hr_manager_project.service.resume.ResumeParseQueueService;
 import com.wangmian.hr_manager_project.service.resume.ResumeValidationService;
 import com.wangmian.hr_manager_project.util.FileStorageUtil;
 import jakarta.servlet.http.HttpSession;
@@ -34,7 +33,6 @@ public class SeekerController {
     private final SeekerService seekerService;
     private final CandidateService candidateService;
     private final ResumeValidationService resumeValidationService;
-    private final ResumeParseQueueService parseQueueService;
     private final FileStorageUtil fileStorageUtil;
     private final CandidateRepository candidateRepository;
     private final InterviewRecordRepository interviewRepository;
@@ -43,13 +41,12 @@ public class SeekerController {
 
     public SeekerController(SeekerService seekerService, CandidateService candidateService,
                             ResumeValidationService resumeValidationService,
-                            ResumeParseQueueService parseQueueService, FileStorageUtil fileStorageUtil,
+                            FileStorageUtil fileStorageUtil,
                             CandidateRepository candidateRepository, InterviewRecordRepository interviewRepository,
                             OfferService offerService) {
         this.seekerService = seekerService;
         this.candidateService = candidateService;
         this.resumeValidationService = resumeValidationService;
-        this.parseQueueService = parseQueueService;
         this.fileStorageUtil = fileStorageUtil;
         this.candidateRepository = candidateRepository;
         this.interviewRepository = interviewRepository;
@@ -79,7 +76,7 @@ public class SeekerController {
     public String uploadPage(HttpSession session, Model model) {
         if (session.getAttribute("seekerId") == null) return "redirect:/seeker";
         String seekerId = (String) session.getAttribute("seekerId");
-        boolean canSubmit = seekerService.canSubmit(seekerId);
+        boolean canSubmit = seekerService.exists(seekerId);
         model.addAttribute("canSubmit", canSubmit);
         if (!canSubmit) {
             model.addAttribute("message", "您当前有一份简历正在被HR处理中，请等待处理结果后再投递");
@@ -93,8 +90,8 @@ public class SeekerController {
         if (session.getAttribute("seekerId") == null) return "redirect:/seeker";
         String seekerId = (String) session.getAttribute("seekerId");
 
-        if (!seekerService.canSubmit(seekerId)) {
-            ra.addFlashAttribute("error", "您当前有一份简历正在处理中，无法再次投递");
+        if (!seekerService.exists(seekerId)) {
+            ra.addFlashAttribute("error", "求职者不存在，请重新登录");
             return "redirect:/seeker/upload";
         }
 
@@ -105,15 +102,8 @@ public class SeekerController {
             // Save file
             String storedName = fileStorageUtil.saveFile(file);
 
-            // Push to Redis Stream for async parsing
-            Map<String, Object> task = new HashMap<>();
-            task.put("seekerId", seekerId);
-            task.put("resumeFileName", file.getOriginalFilename());
-            task.put("storedFileName", storedName);
-            String taskJson = mapper.writeValueAsString(task);
-            parseQueueService.pushParseTask(taskJson);
-
-            ra.addFlashAttribute("success", "简历上传成功，正在解析中，请稍后查看状态");
+            // 同步路径由 Vue 前端使用，Thymeleaf 端不再支持简历解析
+            ra.addFlashAttribute("success", "文件已保存，请通过求职系统查看");
             return "redirect:/seeker/status";
         } catch (Exception e) {
             log.error("Upload failed", e);
@@ -132,8 +122,10 @@ public class SeekerController {
         Candidate candidate = null;
         List<InterviewRecord> interviews = new ArrayList<>();
         Offer offer = null;
-        if (seeker.getActiveCandidateId() != null) {
-            candidate = candidateRepository.findById(seeker.getActiveCandidateId()).orElse(null);
+        String firstCandidateId = seeker.getPositionCandidates().values().stream()
+                .findFirst().orElse(null);
+        if (firstCandidateId != null) {
+            candidate = candidateRepository.findById(firstCandidateId).orElse(null);
             if (candidate != null) {
                 interviews = interviewRepository.findByCandidateIdOrderByRoundAsc(candidate.getId());
                 offer = offerService.findByCandidateId(candidate.getId()).orElse(null);

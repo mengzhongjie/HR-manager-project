@@ -5,6 +5,8 @@ public enum CandidateStatus {
     PENDING_ARCHIVE,
     INTERVIEW_INVITED,
     IN_INTERVIEW,
+    ROUND_1_PASSED,
+    ROUND_2_PASSED,
     WAITING_OFFER,
     OFFERED,
     ONBOARDED,

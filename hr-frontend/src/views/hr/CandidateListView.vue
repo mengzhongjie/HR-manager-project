@@ -14,12 +14,12 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="filter.status" placeholder="全部" clearable style="width: 130px;">
-            <el-option v-for="s in statusList" :key="s" :value="s" />
+            <el-option v-for="s in statusList" :key="s" :value="s" :label="statusLabel(s)" />
           </el-select>
         </el-form-item>
         <el-form-item label="学历">
           <el-select v-model="filter.minEducationLevel" placeholder="全部" clearable style="width: 120px;">
-            <el-option v-for="e in eduList" :key="e" :value="e" />
+            <el-option v-for="e in eduList" :key="e" :value="e" :label="eduLabel(e)" />
           </el-select>
         </el-form-item>
         <el-form-item label="应届">
@@ -57,7 +57,9 @@
           <template #default="{ row }"><StatusBadge :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="yearsOfExperience" label="工作年限" width="100" />
-        <el-table-column prop="educationLevel" label="学历" width="100" />
+        <el-table-column label="学历" width="100">
+          <template #default="{ row }">{{ eduLabel(row.educationLevel) }}</template>
+        </el-table-column>
         <el-table-column label="技术栈" min-width="180">
           <template #default="{ row }">
             <el-tag v-for="s in row.techStack" :key="s" size="small" style="margin: 2px 4px 2px 0;">{{ s }}</el-tag>
@@ -92,8 +94,21 @@ const position = ref(route.params.position || '')
 const loading = ref(false)
 const candidates = ref([])
 
-const statusList = ['NEW', 'PENDING_ARCHIVE', 'INTERVIEW_INVITED', 'IN_INTERVIEW', 'WAITING_OFFER', 'OFFERED', 'ONBOARDED', 'REJECTED']
+const statusList = ['NEW', 'PENDING_ARCHIVE', 'INTERVIEW_INVITED', 'IN_INTERVIEW', 'ROUND_1_PASSED', 'ROUND_2_PASSED', 'WAITING_OFFER', 'OFFERED', 'ONBOARDED', 'REJECTED']
 const eduList = ['HIGH_SCHOOL', 'ASSOCIATE', 'BACHELOR', 'MASTER', 'PHD']
+
+const statusLabelMap = {
+  NEW: '新候选人', PENDING_ARCHIVE: '存档待定', INTERVIEW_INVITED: '面试邀约',
+  IN_INTERVIEW: '面试中', ROUND_1_PASSED: '一面通过', ROUND_2_PASSED: '二面通过',
+  WAITING_OFFER: '待发Offer', OFFERED: '已发Offer',
+  ONBOARDED: '已入职', REJECTED: '已淘汰'
+}
+function statusLabel(s) { return statusLabelMap[s] || s }
+
+const eduLabelMap = {
+  HIGH_SCHOOL: '高中', ASSOCIATE: '大专', BACHELOR: '本科', MASTER: '硕士', PHD: '博士'
+}
+function eduLabel(e) { return eduLabelMap[e] || e }
 
 const filter = reactive({
   nameKeyword: '',
