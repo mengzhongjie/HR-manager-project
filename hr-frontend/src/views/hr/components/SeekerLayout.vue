@@ -24,7 +24,7 @@
           <el-tag type="warning" effect="plain" size="small">
             {{ seekerName }}
           </el-tag>
-          <el-button size="small" round @click="handleLogout">退出</el-button>
+          <el-button size="small" round @click="handleReset">切换</el-button>
         </div>
       </div>
     </el-header>
@@ -46,8 +46,8 @@ const store = useSeekerStore()
 const seekerName = computed(() => store.seekerName)
 const activeMenu = computed(() => route.path)
 
-function handleLogout() {
+function handleReset() {
   store.logout()
-  router.push('/seeker/login')
+  router.push('/seeker/upload').then(() => location.reload())
 }
 </script>

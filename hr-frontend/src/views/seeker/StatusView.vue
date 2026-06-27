@@ -92,6 +92,7 @@ const interviews = ref([])
 const offer = ref(null)
 
 onMounted(async () => {
+  await store.ensureSeeker()
   await loadStatus()
 })
 

@@ -70,7 +70,7 @@ const uploadStatus = ref('')
 const dragover = ref(false)
 
 onMounted(async () => {
-  if (!store.seekerId) return
+  await store.ensureSeeker()
   try {
     canSubmit.value = await seekerApi.canSubmit(store.seekerId)
   } catch (e) {

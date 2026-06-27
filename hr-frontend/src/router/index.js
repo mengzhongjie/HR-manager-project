@@ -1,12 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  // ===== 求职端 =====
-  {
-    path: '/seeker/login',
-    name: 'SeekerLogin',
-    component: () => import('../views/seeker/LoginView.vue')
-  },
+  // ===== 求职端（免登录，自动创建演示账号） =====
   {
     path: '/seeker/upload',
     name: 'SeekerUpload',
@@ -17,8 +12,7 @@ const routes = [
     name: 'SeekerStatus',
     component: () => import('../views/seeker/StatusView.vue')
   },
-  // 求职端重定向
-  { path: '/seeker', redirect: '/seeker/login' },
+  { path: '/seeker', redirect: '/seeker/upload' },
 
   // ===== HR 管理端 =====
   {
@@ -72,9 +66,9 @@ const routes = [
     component: () => import('../views/hr/OnboardingFormView.vue')
   },
 
-  // 默认重定向
-  { path: '/', redirect: '/seeker/login' },
-  { path: '/:pathMatch(.*)*', redirect: '/seeker/login' }
+  // 默认重定向到求职端
+  { path: '/', redirect: '/seeker/upload' },
+  { path: '/:pathMatch(.*)*', redirect: '/seeker/upload' }
 ]
 
 const router = createRouter({
