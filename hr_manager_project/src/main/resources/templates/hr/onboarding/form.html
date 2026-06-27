@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('入职登记')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3>入职登记</h3>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div class="card shadow">
+            <div class="card-body">
+                <form th:action="@{'/hr/onboarding/save?offerId=' + ${offerId}}" method="post" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">入职日期</label>
+                        <input type="date" name="onboardDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">部门</label>
+                        <input type="text" name="department" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">导师</label>
+                        <input type="text" name="mentorName" class="form-control">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-dark">确认入职</button>
+                        <a href="/hr/offers" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

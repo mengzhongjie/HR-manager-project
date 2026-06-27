@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('候选人详情 - ' + ${candidate.name})}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <a th:href="@{'/hr/positions/' + ${position} + '/candidates'}" class="btn btn-outline-secondary mb-3">← 返回列表</a>
+
+        <!-- Basic Info Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white"><h4>基本信息</h4></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><p><strong>姓名：</strong><span th:text="${candidate.name}"></span></p></div>
+                    <div class="col-md-4"><p><strong>邮箱：</strong><span th:text="${candidate.email}"></span></p></div>
+                    <div class="col-md-4"><p><strong>电话：</strong><span th:text="${candidate.phone}"></span></p></div>
+                    <div class="col-md-4"><p><strong>应聘岗位：</strong><span th:text="${candidate.position}"></span></p></div>
+                    <div class="col-md-4"><p><strong>当前状态：</strong>
+                        <span class="badge" th:classappend="${candidate.status.name() == 'NEW'} ? 'bg-info' :
+                            ${candidate.status.name() == 'PENDING_ARCHIVE'} ? 'bg-warning text-dark' :
+                            ${candidate.status.name() == 'INTERVIEW_INVITED'} ? 'bg-primary' :
+                            ${candidate.status.name() == 'IN_INTERVIEW'} ? 'bg-purple' :
+                            ${candidate.status.name() == 'WAITING_OFFER'} ? 'bg-secondary' :
+                            ${candidate.status.name() == 'OFFERED'} ? 'bg-success' :
+                            ${candidate.status.name() == 'ONBOARDED'} ? 'bg-dark' : 'bg-danger'}"
+                            th:text="${candidate.status.name()}"></span>
+                    </p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white"><h4>履历详情</h4></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><p><strong>工作年限：</strong><span th:text="${candidate.yearsOfExperience}"></span></p></div>
+                    <div class="col-md-4"><p><strong>应届：</strong><span th:text="${candidate.isFreshGraduate} ? '是' : '否'"></span></p></div>
+                    <div class="col-md-4"><p><strong>毕业年份：</strong><span th:text="${candidate.graduationYear}"></span></p></div>
+                    <div class="col-md-4"><p><strong>学历：</strong><span th:text="${candidate.educationLevel?.name()}"></span></p></div>
+                    <div class="col-md-4"><p><strong>学校：</strong><span th:text="${candidate.school}"></span></p></div>
+                    <div class="col-md-4"><p><strong>专业：</strong><span th:text="${candidate.major}"></span></p></div>
+                    <div class="col-12"><p><strong>技术栈：</strong>
+                        <span th:each="skill : ${candidate.techStack}" class="badge bg-secondary me-1" th:text="${skill}"></span>
+                    </p></div>
+                    <div class="col-12 mt-2"><p><strong>自我介绍：</strong><br><span th:text="${candidate.selfEvaluation}" class="text-muted"></span></p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Management -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning"><h4>状态管理</h4></div>
+            <div class="card-body">
+                <form th:action="@{'/hr/positions/' + ${position} + '/candidates/' + ${candidate.id} + '/status'}" method="post" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">变更状态</label>
+                        <select name="status" class="form-select">
+                            <option th:each="s : ${T(com.wangmian.hr_manager_project.model.enums.CandidateStatus).values()}"
+                                    th:value="${s.name()}" th:text="${s.name()}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">备注原因</label>
+                        <input type="text" name="reason" class="form-control" placeholder="例如：AI推荐面试">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-warning">更新状态</button>
+                    </div>
+                </form>
+                <hr>
+                <form th:action="@{'/hr/positions/' + ${position} + '/candidates/' + ${candidate.id} + '/qualify'}" method="post">
+                    <button type="submit" class="btn btn-outline-info">执行AI资质评定</button>
+                    <span th:if="${candidate.aiQualification != null}" class="ms-3">
+                        AI评分: <strong th:text="${candidate.aiQualification.score}"></strong> -
+                        <span th:text="${candidate.aiQualification.recommendation}"></span>
+                    </span>
+                </form>
+            </div>
+        </div>
+
+        <!-- Interview Records -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-purple text-white"><h4>面试记录</h4></div>
+            <div class="card-body">
+                <div th:if="${#lists.size(interviews) == 0}" class="text-muted">暂无面试记录</div>
+                <table th:if="${#lists.size(interviews) > 0}" class="table">
+                    <thead><tr><th>轮次</th><th>面试官</th><th>日期</th><th>结果</th><th>评分</th><th>反馈</th></tr></thead>
+                    <tbody>
+                        <tr th:each="iv : ${interviews}">
+                            <td th:text="${iv.round.name()}"></td>
+                            <td th:text="${iv.interviewerName}"></td>
+                            <td th:text="${iv.interviewDate}"></td>
+                            <td><span class="badge" th:classappend="${iv.result.name() == 'PASSED'} ? 'bg-success' : ${iv.result.name() == 'FAILED'} ? 'bg-danger' : 'bg-secondary'" th:text="${iv.result.name()}"></span></td>
+                            <td th:text="${iv.score}"></td>
+                            <td th:text="${iv.feedback}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <a th:href="@{'/hr/interviews/create?candidateId=' + ${candidate.id}}" class="btn btn-sm btn-primary mt-2">添加面试记录</a>
+            </div>
+        </div>
+
+        <!-- Status History -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-secondary text-white"><h4>状态变更历史</h4></div>
+            <div class="card-body">
+                <table th:if="${#lists.size(candidate.statusHistory) > 0}" class="table table-sm">
+                    <thead><tr><th>时间</th><th>从</th><th>到</th><th>操作人</th><th>原因</th></tr></thead>
+                    <tbody>
+                        <tr th:each="h : ${candidate.statusHistory}">
+                            <td th:text="${h.timestamp}"></td>
+                            <td th:text="${h.fromStatus?.name()}"></td>
+                            <td th:text="${h.toStatus?.name()}"></td>
+                            <td th:text="${h.actor}"></td>
+                            <td th:text="${h.reason}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <style>
+        .bg-purple { background-color: #6f42c1; }
+    </style>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('HR管理端首页')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3 class="mb-4">岗位选择</h3>
+        <div class="row">
+            <div th:each="pos : ${positions}" class="col-md-4 mb-3">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h4 class="card-title" th:text="${pos}"></h4>
+                        <p class="display-6 text-primary" th:text="${positionCounts.get(pos)}"></p>
+                        <p class="text-muted">候选人总数</p>
+                        <div class="d-flex justify-content-center gap-2 mb-3">
+                            <span class="badge bg-info" th:text="'新:' + ${positionStatusCounts.get(pos).get('NEW')}"></span>
+                            <span class="badge bg-warning" th:text="'备选:' + ${positionStatusCounts.get(pos).get('PENDING_ARCHIVE')}"></span>
+                            <span class="badge bg-primary" th:text="'面试:' + ${positionStatusCounts.get(pos).get('IN_INTERVIEW')}"></span>
+                            <span class="badge bg-success" th:text="'已入职:' + ${positionStatusCounts.get(pos).get('ONBOARDED')}"></span>
+                        </div>
+                        <a th:href="@{'/hr/positions/' + ${pos} + '/candidates'}" class="btn btn-primary">管理候选人</a>
+                        <a th:href="@{'/hr/positions/' + ${pos} + '/backup'}" class="btn btn-outline-warning">备选列表</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:if="${#lists.size(positions) == 0}" class="alert alert-info">
+            暂无候选人数据，等待求职者上传简历后自动生成。
+        </div>
+    </div>
+</body>
+</html>

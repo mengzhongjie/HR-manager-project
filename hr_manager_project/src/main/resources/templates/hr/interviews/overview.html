@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('面试概览')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>面试概览</h3>
+            <a href="/hr/interviews/create" class="btn btn-primary">录入面试</a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <div th:if="${#lists.size(interviews) == 0}" class="alert alert-info">暂无面试记录</div>
+                <table th:if="${#lists.size(interviews) > 0}" class="table table-striped">
+                    <thead class="table-dark">
+                        <tr><th>候选人</th><th>应聘岗位</th><th>轮次</th><th>面试官</th><th>日期</th><th>结果</th><th>评分</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="iv : ${interviews}">
+                            <td th:text="${iv.candidateName}"></td>
+                            <td th:text="${iv.candidatePosition}"></td>
+                            <td th:text="${iv.round.name()}"></td>
+                            <td th:text="${iv.interviewerName}"></td>
+                            <td th:text="${iv.interviewDate}"></td>
+                            <td>
+                                <span class="badge" th:classappend="${iv.result.name() == 'PASSED'} ? 'bg-success' : ${iv.result.name() == 'FAILED'} ? 'bg-danger' : 'bg-secondary'" th:text="${iv.result.name()}"></span>
+                            </td>
+                            <td th:text="${iv.score}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('备选列表 - ' + ${position})}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3>备选人才库 - <span class="text-warning" th:text="${position}"></span></h3>
+        <a th:href="@{'/hr/positions/' + ${position} + '/candidates'}" class="btn btn-outline-primary mb-3">← 返回候选人列表</a>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <div th:if="${#lists.size(candidates) == 0}" class="alert alert-info">暂无备选候选人</div>
+                <table th:if="${#lists.size(candidates) > 0}" class="table table-striped">
+                    <thead class="table-warning">
+                        <tr><th>姓名</th><th>工作年限</th><th>学历</th><th>技术栈</th><th>操作</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="c : ${candidates}">
+                            <td th:text="${c.name}"></td>
+                            <td th:text="${c.yearsOfExperience}"></td>
+                            <td th:text="${c.educationLevel?.name()}"></td>
+                            <td>
+                                <span th:each="s : ${c.techStack}" class="badge bg-light text-dark me-1" th:text="${s}"></span>
+                            </td>
+                            <td>
+                                <form th:action="@{'/hr/positions/' + ${position} + '/backup/' + ${c.id} + '/restore'}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('确认将该候选人恢复到候选人列表？')">恢复</button>
+                                </form>
+                                <a th:href="@{'/hr/positions/' + ${position} + '/candidates/' + ${c.id}}" class="btn btn-sm btn-outline-primary">查看</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

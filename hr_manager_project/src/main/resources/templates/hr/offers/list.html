@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('Offer管理')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3>已发Offer一览</h3>
+        <div class="card shadow">
+            <div class="card-body">
+                <div th:if="${#lists.size(offers) == 0}" class="alert alert-info">暂无已发Offer</div>
+                <table th:if="${#lists.size(offers) > 0}" class="table table-striped">
+                    <thead class="table-success">
+                        <tr><th>候选人</th><th>岗位</th><th>薪资</th><th>发放日期</th><th>状态</th><th>操作</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="o : ${offers}">
+                            <td th:text="${o.candidateName}"></td>
+                            <td th:text="${o.candidatePosition}"></td>
+                            <td th:text="${o.offeredSalary}"></td>
+                            <td th:text="${o.offerDate}"></td>
+                            <td>
+                                <span th:if="${o.accepted == null}" class="badge bg-warning text-dark">待响应</span>
+                                <span th:if="${o.accepted == true}" class="badge bg-success">已接受</span>
+                                <span th:if="${o.accepted == false}" class="badge bg-danger">已拒绝</span>
+                            </td>
+                            <td>
+                                <a th:if="${o.accepted == true}" th:href="@{'/hr/onboarding/create?offerId=' + ${o.id}}" class="btn btn-sm btn-dark">登记入职</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

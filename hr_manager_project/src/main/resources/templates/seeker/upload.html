@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/seeker-layout :: head('投递简历')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/seeker-layout :: navbar}"></nav>
+    <div class="container mt-4" th:replace="~{fragments/seeker-layout :: content}">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">投递简历</h4>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+                        <div th:if="${canSubmit}">
+                            <form action="/seeker/upload" method="post" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">选择简历文件（PDF格式，最大10MB）</label>
+                                    <input type="file" name="file" class="form-control" accept=".pdf,application/pdf" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">上传并解析</button>
+                            </form>
+                            <hr>
+                            <div class="alert alert-info">
+                                <strong>说明：</strong>支持PDF格式简历，上传后将自动进行AI解析。
+                                解析完成后，您可以在"查看状态"页面查看进度。
+                            </div>
+                        </div>
+                        <div th:if="${!canSubmit}" class="alert alert-warning" th:text="${message}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

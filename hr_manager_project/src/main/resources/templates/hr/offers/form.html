@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('发放Offer')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3>发放Offer</h3>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div class="card shadow">
+            <div class="card-body">
+                <form th:action="@{'/hr/offers/save?candidateId=' + ${candidateId}}" method="post" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">薪资</label>
+                        <input type="number" name="offeredSalary" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Offer日期</label>
+                        <input type="date" name="offerDate" class="form-control" th:value="${#dates.format(#dates.createToday(), 'yyyy-MM-dd')}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">截止日期</label>
+                        <input type="date" name="expiryDate" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">备注</label>
+                        <textarea name="remark" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success">确认发放</button>
+                        <a href="/hr/offers/pending" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

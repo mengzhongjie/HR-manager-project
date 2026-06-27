@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('候选人列表 - ' + ${position})}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>候选人列表 - <span class="text-primary" th:text="${position}"></span></h3>
+            <a th:href="@{'/hr/positions/' + ${position} + '/backup'}" class="btn btn-outline-warning">备选列表</a>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-secondary text-white">筛选条件</div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">姓名关键词</label>
+                        <input type="text" name="nameKeyword" class="form-control" th:value="${filter.nameKeyword}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">状态</label>
+                        <select name="status" class="form-select">
+                            <option value="">全部</option>
+                            <option th:each="s : ${T(com.wangmian.hr_manager_project.model.enums.CandidateStatus).values()}"
+                                    th:value="${s.name()}" th:text="${s.name()}" th:selected="${filter.status != null && filter.status.name() == s.name()}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">应届/往届</label>
+                        <select name="isFreshGraduate" class="form-select">
+                            <option value="">全部</option>
+                            <option value="true" th:selected="${filter.isFreshGraduate != null && filter.isFreshGraduate}">应届</option>
+                            <option value="false" th:selected="${filter.isFreshGraduate != null && !filter.isFreshGraduate}">往届</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">技术栈</label>
+                        <input type="text" name="techStack" class="form-control" th:value="${filter.techStack}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">最低年限</label>
+                        <input type="number" name="minExperience" class="form-control" th:value="${filter.minExperience}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">AI评分≥</label>
+                        <input type="number" name="minAiScore" class="form-control" th:value="${filter.minAiScore}" min="0" max="100">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">筛选</button>
+                        <a th:href="@{'/hr/positions/' + ${position} + '/candidates'}" class="btn btn-secondary">重置</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Candidate Table -->
+        <div class="card shadow">
+            <div class="card-body">
+                <div th:if="${#lists.size(candidates) == 0}" class="alert alert-info">暂无符合条件的候选人</div>
+                <div th:if="${#lists.size(candidates) > 0}">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>姓名</th>
+                                <th>状态</th>
+                                <th>工作年限</th>
+                                <th>学历</th>
+                                <th>技术栈</th>
+                                <th>AI资质</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="c : ${candidates}">
+                                <td th:text="${c.name}"></td>
+                                <td>
+                                    <span class="badge" th:classappend="${c.status.name() == 'NEW'} ? 'bg-info' :
+                                        ${c.status.name() == 'PENDING_ARCHIVE'} ? 'bg-warning text-dark' :
+                                        ${c.status.name() == 'INTERVIEW_INVITED'} ? 'bg-primary' :
+                                        ${c.status.name() == 'IN_INTERVIEW'} ? 'bg-purple' :
+                                        ${c.status.name() == 'WAITING_OFFER'} ? 'bg-secondary' :
+                                        ${c.status.name() == 'OFFERED'} ? 'bg-success' :
+                                        ${c.status.name() == 'ONBOARDED'} ? 'bg-dark' : 'bg-danger'"
+                                        th:text="${c.status.name()}"></span>
+                                </td>
+                                <td th:text="${c.yearsOfExperience}"></td>
+                                <td th:text="${c.educationLevel?.name()}"></td>
+                                <td>
+                                    <span th:each="skill, iter : ${c.techStack}"
+                                          class="badge bg-light text-dark me-1"
+                                          th:text="${skill}"></span>
+                                </td>
+                                <td>
+                                    <span th:if="${c.aiQualification != null}"
+                                          class="badge bg-info"
+                                          th:text="${c.aiQualification.score + ' - ' + c.aiQualification.recommendation}"></span>
+                                    <span th:if="${c.aiQualification == null}" class="text-muted">未评定</span>
+                                </td>
+                                <td>
+                                    <a th:href="@{'/hr/positions/' + ${position} + '/candidates/' + ${c.id}}" class="btn btn-sm btn-outline-primary">详情</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

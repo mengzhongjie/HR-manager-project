@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hr-layout :: head('录入面试')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/hr-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <h3>录入面试记录</h3>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <form action="/hr/interviews/save" method="post" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">选择候选人</label>
+                        <select name="candidateId" class="form-select" required>
+                            <option value="">-- 请选择 --</option>
+                            <option th:each="c : ${candidates}" th:value="${c.id}"
+                                    th:text="${c.name + ' - ' + c.position}"
+                                    th:selected="${selectedCandidate != null and selectedCandidate.id == c.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">面试轮次</label>
+                        <select name="round" class="form-select" required>
+                            <option th:each="r : ${T(com.wangmian.hr_manager_project.model.enums.InterviewRound).values()}"
+                                    th:value="${r.name()}" th:text="${r.name()}"
+                                    th:selected="${nextRound != null and nextRound == r}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">面试结果</label>
+                        <select name="result" class="form-select" required>
+                            <option th:each="r : ${T(com.wangmian.hr_manager_project.model.enums.InterviewResult).values()}"
+                                    th:value="${r.name()}" th:text="${r.name()}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">面试官</label>
+                        <input type="text" name="interviewerName" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">面试日期</label>
+                        <input type="date" name="interviewDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">评分 (1-100)</label>
+                        <input type="number" name="score" class="form-control" min="0" max="100">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">面试反馈</label>
+                        <textarea name="feedback" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">保存</button>
+                        <a href="/hr/interviews" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

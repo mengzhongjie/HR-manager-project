@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/seeker-layout :: head('投递状态')}">
+</head>
+<body>
+    <nav th:replace="~{fragments/seeker-layout :: navbar}"></nav>
+    <div class="container mt-4">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <div th:if="${candidate == null}" class="alert alert-info">
+            <h4>暂无投递记录</h4>
+            <p>请先上传简历进行投递。</p>
+            <a href="/seeker/upload" class="btn btn-primary">上传简历</a>
+        </div>
+
+        <div th:if="${candidate != null}">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4>投递状态</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>应聘岗位：</strong><span th:text="${candidate.position}"></span></p>
+                            <p><strong>姓名：</strong><span th:text="${candidate.name}"></span></p>
+                            <p><strong>简历文件：</strong><span th:text="${candidate.resumeFileName}"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>当前状态：</strong>
+                                <span class="badge" th:class="${candidate.status.name() == 'NEW' ? 'badge bg-info' :
+                                    candidate.status.name() == 'PENDING_ARCHIVE' ? 'badge bg-warning' :
+                                    candidate.status.name() == 'INTERVIEW_INVITED' ? 'badge bg-primary' :
+                                    candidate.status.name() == 'IN_INTERVIEW' ? 'badge bg-purple' :
+                                    candidate.status.name() == 'WAITING_OFFER' ? 'badge bg-secondary' :
+                                    candidate.status.name() == 'OFFERED' ? 'badge bg-success' :
+                                    candidate.status.name() == 'ONBOARDED' ? 'badge bg-dark' : 'badge bg-danger'}"
+                                    th:text="${candidate.status.name()}"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interviews -->
+            <div th:if="${#lists.size(interviews) > 0}" class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4>面试记录</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>轮次</th>
+                                <th>面试官</th>
+                                <th>日期</th>
+                                <th>结果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="iv : ${interviews}">
+                                <td th:text="${iv.round.name()}"></td>
+                                <td th:text="${iv.interviewerName}"></td>
+                                <td th:text="${iv.interviewDate}"></td>
+                                <td>
+                                    <span class="badge" th:class="${iv.result.name() == 'PASSED' ? 'badge bg-success' :
+                                        iv.result.name() == 'FAILED' ? 'badge bg-danger' : 'badge bg-secondary'}"
+                                        th:text="${iv.result.name()}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Offer -->
+            <div th:if="${offer != null}" class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4>Offer信息</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>薪资：</strong><span th:text="${offer.offeredSalary}"></span></p>
+                    <p><strong>发放日期：</strong><span th:text="${offer.offerDate}"></span></p>
+                    <p><strong>状态：</strong>
+                        <span th:if="${offer.accepted == null}" class="badge bg-warning">待响应</span>
+                        <span th:if="${offer.accepted == true}" class="badge bg-success">已接受</span>
+                        <span th:if="${offer.accepted == false}" class="badge bg-danger">已拒绝</span>
+                    </p>
+                    <div th:if="${offer.accepted == null}">
+                        <form action="/seeker/offer/__${offer.id}__/respond" method="post" style="display:inline">
+                            <input type="hidden" name="accept" value="true">
+                            <button type="submit" class="btn btn-success">接受Offer</button>
+                        </form>
+                        <form action="/seeker/offer/__${offer.id}__/respond" method="post" style="display:inline">
+                            <input type="hidden" name="accept" value="false">
+                            <button type="submit" class="btn btn-danger">拒绝Offer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
