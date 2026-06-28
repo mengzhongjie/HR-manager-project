@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 @Service
 public class ResumeTextExtractionService {
@@ -23,8 +24,11 @@ public class ResumeTextExtractionService {
     }
 
     public String extractText(MultipartFile file) {
-        try (PDDocument document = Loader.loadPDF(file.getBytes())) {
-            return doExtract(document, file.getOriginalFilename());
+        try {
+            byte[] bytes = file.getBytes();
+            try (PDDocument document = Loader.loadPDF(bytes)) {
+                return doExtract(document, bytes, file.getOriginalFilename());
+            }
         } catch (IOException e) {
             log.error("PDF extraction failed for {}", file.getOriginalFilename(), e);
             throw new IllegalArgumentException("PDF文件解析失败: " + e.getMessage());
@@ -32,20 +36,23 @@ public class ResumeTextExtractionService {
     }
 
     public String extractText(File file) {
-        try (PDDocument document = Loader.loadPDF(file)) {
-            return doExtract(document, file.getName());
+        try {
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            try (PDDocument document = Loader.loadPDF(file)) {
+                return doExtract(document, bytes, file.getName());
+            }
         } catch (IOException e) {
             log.error("PDF extraction failed for {}", file.getName(), e);
             throw new IllegalArgumentException("PDF文件解析失败: " + e.getMessage());
         }
     }
 
-    private String doExtract(PDDocument document, String fileName) throws IOException {
+    private String doExtract(PDDocument document, byte[] pdfBytes, String fileName) throws IOException {
         PDFTextStripper stripper = new PDFTextStripper();
         String text = stripper.getText(document);
         if (text == null || text.trim().isEmpty()) {
             log.info("PDFBox returned empty for {}, trying OCR fallback...", fileName);
-            String ocrText = ocrService.ocr(document);
+            String ocrText = ocrService.ocr(pdfBytes, fileName);
             if (ocrText != null && !ocrText.trim().isEmpty()) {
                 log.info("OCR extracted {} chars from {}", ocrText.length(), fileName);
                 return ocrText;
