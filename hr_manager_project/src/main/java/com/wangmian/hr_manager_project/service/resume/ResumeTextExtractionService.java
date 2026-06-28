@@ -16,6 +16,12 @@ public class ResumeTextExtractionService {
 
     private static final Logger log = LoggerFactory.getLogger(ResumeTextExtractionService.class);
 
+    private final ScannedPdfOcrService ocrService;
+
+    public ResumeTextExtractionService(ScannedPdfOcrService ocrService) {
+        this.ocrService = ocrService;
+    }
+
     public String extractText(MultipartFile file) {
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             return doExtract(document, file.getOriginalFilename());
@@ -38,7 +44,13 @@ public class ResumeTextExtractionService {
         PDFTextStripper stripper = new PDFTextStripper();
         String text = stripper.getText(document);
         if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("PDF文件内容为空，无法解析");
+            log.info("PDFBox returned empty for {}, trying OCR fallback...", fileName);
+            String ocrText = ocrService.ocr(document);
+            if (ocrText != null && !ocrText.trim().isEmpty()) {
+                log.info("OCR extracted {} chars from {}", ocrText.length(), fileName);
+                return ocrText;
+            }
+            throw new IllegalArgumentException("PDF文件内容为空，无法解析。如果该PDF为扫描件，请确保已配置OCR API密钥");
         }
         log.info("Text extracted from {}: {} chars", fileName, text.length());
         return text;

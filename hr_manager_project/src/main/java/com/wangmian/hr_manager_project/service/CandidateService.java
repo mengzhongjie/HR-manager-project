@@ -22,6 +22,26 @@ public class CandidateService {
 
     private static final Logger log = LoggerFactory.getLogger(CandidateService.class);
 
+    private static final String LOCK_PREFIX = "state_lock:candidate:";
+    private static final Duration LOCK_TTL = Duration.ofSeconds(30);
+    private static final long LOCK_WAIT_MS = 3000;
+    private static final long LOCK_RETRY_INTERVAL_MS = 100;
+
+    // Lua 脚本：原子化比较并删除锁（防止误删其他线程的锁）
+    private static final String UNLOCK_SCRIPT =
+            "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+            "    return redis.call('del', KEYS[1]) " +
+            "else " +
+            "    return 0 " +
+            "end";
+
+    private static final org.springframework.data.redis.core.script.DefaultRedisScript<Long> unlockScript;
+    static {
+        unlockScript = new org.springframework.data.redis.core.script.DefaultRedisScript<>();
+        unlockScript.setScriptText(UNLOCK_SCRIPT);
+        unlockScript.setResultType(Long.class);
+    }
+
     private final CandidateRepository candidateRepository;
     private final AgentRegistry agentRegistry;
     private final StringRedisTemplate redis;
@@ -81,12 +101,22 @@ public class CandidateService {
     }
 
     public Candidate updateStatus(String candidateId, CandidateStatus newStatus, String actor, String reason) {
-        // Redis distributed lock
-        String lockKey = "state_lock:candidate:" + candidateId;
-        Boolean locked = redis.opsForValue().setIfAbsent(lockKey, "locked", Duration.ofSeconds(10));
-        if (Boolean.FALSE.equals(locked)) {
-            throw new IllegalStateException("候选人正在被其他操作处理，请稍后重试");
+        String lockKey = LOCK_PREFIX + candidateId;
+        String lockValue = UUID.randomUUID().toString();
+
+        // 自旋重试获取分布式锁（最多等待 3 秒）
+        long deadline = System.currentTimeMillis() + LOCK_WAIT_MS;
+        Boolean locked = false;
+        while (!Boolean.TRUE.equals(locked) && System.currentTimeMillis() < deadline) {
+            locked = redis.opsForValue().setIfAbsent(lockKey, lockValue, LOCK_TTL);
+            if (!Boolean.TRUE.equals(locked)) {
+                try { Thread.sleep(LOCK_RETRY_INTERVAL_MS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+            }
         }
+        if (!Boolean.TRUE.equals(locked)) {
+            throw new IllegalStateException("系统繁忙，请稍后重试");
+        }
+
         try {
             Candidate candidate = candidateRepository.findById(candidateId)
                     .orElseThrow(() -> new IllegalArgumentException("候选人不存在: " + candidateId));
@@ -109,7 +139,8 @@ public class CandidateService {
             log.info("Status updated: {} {} -> {} (by {})", candidateId, oldStatus, newStatus, actor);
             return saved;
         } finally {
-            redis.delete(lockKey);
+            // 原子化释放锁：仅当锁的值还是自己的 UUID 时才删除（防误删）
+            redis.execute(unlockScript, java.util.List.of(lockKey), lockValue);
         }
     }
 

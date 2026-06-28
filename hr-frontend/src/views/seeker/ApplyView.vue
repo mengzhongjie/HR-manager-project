@@ -38,37 +38,70 @@
       <!-- 第2步：编辑补充信息 -->
       <div v-if="step === 'edit'">
         <el-alert title="以下信息由AI从简历中提取，请检查并补充完整" type="success" :closable="false" show-icon style="margin-bottom: 16px;" />
-        <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+
+        <!-- 完整度进度 -->
+        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 13px; color: #666;">信息完整度：</span>
+          <el-progress :percentage="completeness" :color="completenessColors" :stroke-width="14" style="flex:1; max-width: 300px;" />
+          <span style="font-size: 12px; color: #999;">{{ filledCount }}/{{ totalRequired }} 必填</span>
+        </div>
+
+        <el-form :model="form" :rules="rules" ref="formRef" label-width="110px">
           <el-form-item label="姓名" prop="name">
-            <el-input v-model="form.name" placeholder="请输入姓名" />
+            <el-input v-model="form.name" placeholder="请输入姓名">
+              <template #suffix>
+                <el-icon v-if="parsedFields.has('name')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+              </template>
+            </el-input>
           </el-form-item>
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="邮箱">
-                <el-input v-model="form.email" placeholder="邮箱" />
+                <el-input v-model="form.email" placeholder="邮箱">
+                  <template #suffix>
+                    <el-icon v-if="parsedFields.has('email')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                    <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="电话" prop="phone">
-                <el-input v-model="form.phone" placeholder="电话" />
+                <el-input v-model="form.phone" placeholder="电话">
+                  <template #suffix>
+                    <el-icon v-if="parsedFields.has('phone')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                    <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item>
             </el-col>
           </el-row>
           <el-form-item label="应聘岗位" prop="position">
-            <el-input v-model="form.position" placeholder="应聘岗位" />
+            <el-input v-model="form.position" placeholder="应聘岗位">
+              <template #suffix>
+                <el-icon v-if="parsedFields.has('position')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+              </template>
+            </el-input>
           </el-form-item>
           <el-row :gutter="16">
-            <el-col :span="12">
+            <el-col :span="8">
               <el-form-item label="工作年限" prop="yearsOfExperience">
                 <el-input-number v-model="form.yearsOfExperience" :min="0" :max="50" style="width:100%;" />
               </el-form-item>
             </el-col>
-            <el-col :span="12">
+            <el-col :span="8">
               <el-form-item label="应届">
                 <el-select v-model="form.isFreshGraduate" style="width:100%;">
                   <el-option label="是" :value="true" />
                   <el-option label="否" :value="false" />
                 </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="年龄">
+                <el-input-number v-model="form.age" :min="0" :max="100" style="width:100%;" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -93,12 +126,22 @@
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="学校">
-                <el-input v-model="form.school" placeholder="毕业院校" />
+                <el-input v-model="form.school" placeholder="毕业院校">
+                  <template #suffix>
+                    <el-icon v-if="parsedFields.has('school')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                    <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="专业">
-                <el-input v-model="form.major" placeholder="专业" />
+                <el-input v-model="form.major" placeholder="专业">
+                  <template #suffix>
+                    <el-icon v-if="parsedFields.has('major')" color="#67c23a"><CircleCheckFilled /></el-icon>
+                    <el-icon v-else color="#e6a23c"><WarningFilled /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item>
             </el-col>
           </el-row>
@@ -108,15 +151,16 @@
             </el-select>
           </el-form-item>
           <el-form-item label="工作经历">
-            <el-input v-model="form.workHistory" type="textarea" :rows="2" placeholder="工作经历摘要" />
+            <el-input v-model="form.workHistory" type="textarea" :rows="3" placeholder="请填写工作经历，包括公司、职位、时间段" />
           </el-form-item>
           <el-form-item label="自我评价">
-            <el-input v-model="form.selfEvaluation" type="textarea" :rows="2" placeholder="自我评价" />
+            <el-input v-model="form.selfEvaluation" type="textarea" :rows="2" placeholder="请填写自我评价" />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSubmit" :loading="submitting" size="large" style="width:200px;">
               {{ submitting ? '提交中...' : '确认投递' }}
             </el-button>
+            <el-button @click="step = 'upload'" style="margin-left: 12px;">重新上传</el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -125,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { seekerApi } from '../../api'
@@ -137,7 +181,18 @@ const router = useRouter()
 const store = useSeekerStore()
 
 const position = ref(route.params.position || '')
-const commonTech = ['Java','Spring','SpringBoot','MyBatis','MySQL','Redis','MongoDB','RabbitMQ','Kafka','Docker','Kubernetes','Vue','React','Python','Go','Linux','微服务','分布式','高并发','JVM','SQL','Elasticsearch']
+const commonTech = [
+  'Java','Spring','SpringBoot','SpringCloud','MyBatis','MySQL','Redis','MongoDB',
+  'RabbitMQ','Kafka','Docker','Kubernetes','K8s',
+  'Vue','React','Angular','Node.js','TypeScript','JavaScript','jQuery',
+  'Python','Go','Rust','C++','C#',
+  'Linux','Nginx','Jenkins','Git','Maven','Gradle',
+  'HTML','CSS','Bootstrap','Tailwind','Sass',
+  'Oracle','PostgreSQL','SQLite','Elasticsearch',
+  'Flask','Django','TensorFlow','PyTorch',
+  '微服务','分布式','高并发','JVM','SQL',
+  '机器学习','深度学习','NLP','AI','大模型','敏捷开发','Scrum'
+]
 
 // 步骤
 const step = ref('upload')
@@ -152,10 +207,13 @@ const formRef = ref(null)
 const storedFileName = ref('')
 const resumeFileName = ref('')
 
+// AI解析成功的字段集合
+const parsedFields = ref(new Set())
+
 // 编辑表单
 const form = reactive({
   name: '', email: '', phone: '', position: position.value,
-  yearsOfExperience: 0, isFreshGraduate: false,
+  yearsOfExperience: 0, isFreshGraduate: false, age: null,
   graduationYear: null, educationLevel: '',
   school: '', major: '',
   techStack: [], workHistory: '', selfEvaluation: ''
@@ -173,6 +231,26 @@ const rules = {
   educationLevel: [{ required: true, message: '请选择学历', trigger: 'change' }],
   techStack: [{ required: true, message: '请至少选择一项技术栈', trigger: 'change' }]
 }
+
+// 完整度计算
+const totalRequired = 7 // name, phone, position, yearsOfExperience, educationLevel, techStack, (email非必填)
+const filledCount = computed(() => {
+  let count = 0
+  if (form.name) count++
+  if (form.phone) count++
+  if (form.position) count++
+  if (form.yearsOfExperience !== null && form.yearsOfExperience !== undefined) count++
+  if (form.educationLevel) count++
+  if (form.techStack && form.techStack.length > 0) count++
+  // email 不强制
+  return count
+})
+const completeness = computed(() => Math.round((filledCount.value / totalRequired) * 100))
+const completenessColors = computed(() => {
+  if (completeness.value >= 80) return '#67c23a'
+  if (completeness.value >= 50) return '#e6a23c'
+  return '#f56c6c'
+})
 
 function triggerUpload() { fileInput.value?.click() }
 
@@ -212,6 +290,17 @@ async function startParse() {
     resumeFileName.value = result.resumeFileName
     const c = result.candidate
 
+    // 记录哪些字段被AI成功提取
+    const extracted = new Set()
+    if (c.name) extracted.add('name')
+    if (c.email) extracted.add('email')
+    if (c.phone) extracted.add('phone')
+    if (c.position) extracted.add('position')
+    if (c.school) extracted.add('school')
+    if (c.major) extracted.add('major')
+    if (c.techStack && c.techStack.length > 0) extracted.add('techStack')
+    parsedFields.value = extracted
+
     // 填满表单
     form.name = c.name || ''
     form.email = c.email || ''
@@ -219,6 +308,7 @@ async function startParse() {
     form.position = c.position || position.value
     form.yearsOfExperience = c.yearsOfExperience ?? 0
     form.isFreshGraduate = c.isFreshGraduate ?? false
+    form.age = c.age ?? null
     form.graduationYear = c.graduationYear ?? null
     form.educationLevel = c.educationLevel || ''
     form.school = c.school || ''
@@ -228,7 +318,7 @@ async function startParse() {
     form.selfEvaluation = c.selfEvaluation || ''
 
     step.value = 'edit'
-    ElMessage.success('简历解析完成，请检查并补充信息')
+    ElMessage.success(`简历解析完成！已提取 ${extracted.size} 个字段，请检查并补充`)
   } catch (e) {
     // handled by axios interceptor
   } finally {
@@ -238,7 +328,15 @@ async function startParse() {
 
 async function handleSubmit() {
   const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    ElMessage.warning('请填写所有必填项')
+    return
+  }
+  // 检查必填项
+  if (!form.name || !form.phone || !form.position || !form.educationLevel || !form.techStack?.length) {
+    ElMessage.warning('请补全姓名、电话、岗位、学历和技术栈')
+    return
+  }
   submitting.value = true
   try {
     await seekerApi.submitCandidate({
