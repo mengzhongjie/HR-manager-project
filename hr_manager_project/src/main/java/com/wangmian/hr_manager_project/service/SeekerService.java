@@ -25,6 +25,15 @@ public class SeekerService {
         this.candidateRepository = candidateRepository;
     }
 
+    /**
+     * 注册新求职者或获取已有求职者信息。
+     *
+     * @param username 用户名
+     * @param name     姓名
+     * @param email    邮箱
+     * @param phone    电话
+     * @return 求职者对象
+     */
     public Seeker registerOrGet(String username, String name, String email, String phone) {
         Optional<Seeker> existing = seekerRepository.findByUsername(username);
         if (existing.isPresent()) {
@@ -41,7 +50,13 @@ public class SeekerService {
         return saved;
     }
 
-    /** 检查能否投递指定岗位：该岗位没有进行中的候选人 */
+    /**
+     * 检查求职者能否投递指定岗位：该岗位没有进行中的候选人。
+     *
+     * @param seekerId 求职者 ID
+     * @param position 岗位名称
+     * @return 可以投递返回 true，否则 false
+     */
     public boolean canSubmit(String seekerId, String position) {
         List<Candidate> existing = candidateRepository.findBySeekerIdAndPosition(seekerId, position);
         for (Candidate c : existing) {
@@ -55,12 +70,23 @@ public class SeekerService {
         return true;
     }
 
-    /** 检查求职者ID是否有效 */
+    /**
+     * 检查求职者 ID 是否存在。
+     *
+     * @param seekerId 求职者 ID
+     * @return 存在返回 true，否则 false
+     */
     public boolean exists(String seekerId) {
         return seekerRepository.existsById(seekerId);
     }
 
-    /** 关联求职者和候选人（岗位维度） */
+    /**
+     * 关联求职者和候选人（岗位维度）。
+     *
+     * @param seekerId    求职者 ID
+     * @param candidateId 候选人 ID
+     * @param position    岗位名称
+     */
     public void linkCandidate(String seekerId, String candidateId, String position) {
         Seeker seeker = seekerRepository.findById(seekerId).orElseThrow();
         seeker.getPositionCandidates().put(position, candidateId);
@@ -68,10 +94,22 @@ public class SeekerService {
         seekerRepository.save(seeker);
     }
 
+    /**
+     * 根据 ID 查询求职者。
+     *
+     * @param id 求职者 ID
+     * @return 求职者 Optional
+     */
     public Optional<Seeker> findById(String id) {
         return seekerRepository.findById(id);
     }
 
+    /**
+     * 根据用户名查询求职者。
+     *
+     * @param username 用户名
+     * @return 求职者 Optional
+     */
     public Optional<Seeker> findByUsername(String username) {
         return seekerRepository.findByUsername(username);
     }

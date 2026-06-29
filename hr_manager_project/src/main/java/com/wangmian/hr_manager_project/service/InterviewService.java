@@ -31,14 +31,33 @@ public class InterviewService {
         this.candidateService = candidateService;
     }
 
+    /**
+     * 根据候选人 ID 查询其所有面试记录，按轮次升序排列。
+     *
+     * @param candidateId 候选人 ID
+     * @return 面试记录列表
+     */
     public List<InterviewRecord> getByCandidateId(String candidateId) {
         return interviewRepository.findByCandidateIdOrderByRoundAsc(candidateId);
     }
 
+    /**
+     * 获取所有面试记录，按创建时间降序排列。
+     *
+     * @return 所有面试记录列表
+     */
     public List<InterviewRecord> getAllInterviews() {
         return interviewRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * 保存面试记录，校验面试轮次顺序并根据面试结果自动推进候选人状态。
+     *
+     * @param interview 面试记录
+     * @return 保存后的面试记录
+     * @throws IllegalArgumentException 候选人不存在时抛出
+     * @throws IllegalStateException    上一轮未通过时抛出
+     */
     public InterviewRecord saveInterview(InterviewRecord interview) {
         Candidate candidate = candidateRepository.findById(interview.getCandidateId())
                 .orElseThrow(() -> new IllegalArgumentException("候选人不存在"));

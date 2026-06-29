@@ -39,6 +39,13 @@ public class ResumeSubmitConsumer {
         this.mapper.registerModule(new JavaTimeModule());
     }
 
+    /**
+     * 消费 RabbitMQ 简历提交消息，将消息解析后加入待处理队列。
+     * 当队列积累达到批量阈值时自动触发 flush。
+     *
+     * @param message JSON 格式的简历提交消息，包含 seekerId、position、candidateJson
+     * @throws RuntimeException 消息处理失败时抛出，由 RabbitMQ 重试机制处理
+     */
     @RabbitListener(queues = "hr.resume.queue", concurrency = "1-3")
     public void onResumeSubmitted(String message) {
         try {
@@ -64,7 +71,9 @@ public class ResumeSubmitConsumer {
         }
     }
 
-    /** 定时兜底：不足批量条数时按时间间隔刷新 */
+    /**
+     * 定时兜底刷新：当消息积累不足批量阈值时，按固定时间间隔将积压消息写入 MongoDB
+     */
     @Scheduled(fixedDelayString = "${hr.resume.batch.interval-ms:5000}")
     public void scheduledFlush() {
         if (!pending.isEmpty()) {
@@ -73,7 +82,13 @@ public class ResumeSubmitConsumer {
         }
     }
 
-    /** 批量写入 MongoDB */
+    /**
+     * 将待处理队列中的简历消息批量写入 MongoDB，
+     * 并关联候选人到对应的求职者。
+     * 写入失败时将消息重新放回待处理队列。
+     *
+     * @throws RuntimeException 批量保存失败时抛出，消息会回填待处理队列
+     */
     public synchronized void flush() {
         if (pending.isEmpty()) return;
 

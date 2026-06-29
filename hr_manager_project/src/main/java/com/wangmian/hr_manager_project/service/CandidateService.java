@@ -52,29 +52,65 @@ public class CandidateService {
         this.redis = redis;
     }
 
+    /**
+     * 保存候选人，若状态为空则默认设置为 NEW。
+     *
+     * @param candidate 候选人对象
+     * @return 保存后的候选人
+     */
     public Candidate save(Candidate candidate) {
         if (candidate.getStatus() == null) candidate.setStatus(CandidateStatus.NEW);
         candidate.setUpdatedAt(LocalDateTime.now());
         return candidateRepository.save(candidate);
     }
 
+    /**
+     * 根据 ID 查询候选人。
+     *
+     * @param id 候选人 ID
+     * @return 候选人 Optional
+     */
     public Optional<Candidate> findById(String id) {
         return candidateRepository.findById(id);
     }
 
+    /**
+     * 根据岗位名称查询候选人列表。
+     *
+     * @param position 岗位名称
+     * @return 候选人列表
+     */
     public List<Candidate> findByPosition(String position) {
         return candidateRepository.findByPosition(position);
     }
 
+    /**
+     * 获取所有去重后的岗位名称列表。
+     *
+     * @return 岗位名称列表
+     */
     public List<String> getAllPositions() {
         return candidateRepository.findDistinctPositions();
     }
 
+    /**
+     * 根据岗位名称和筛选条件过滤候选人。
+     *
+     * @param position 岗位名称
+     * @param filter   筛选条件 DTO
+     * @return 过滤后的候选人列表
+     */
     public List<Candidate> filterByPosition(String position, CandidateFilterDTO filter) {
         List<Candidate> candidates = candidateRepository.findByPosition(position);
         return applyFilters(candidates, filter);
     }
 
+    /**
+     * 根据候选人状态筛选候选人列表。
+     *
+     * @param status 候选人状态
+     * @return 对应状态的候选人列表
+     */
     public List<Candidate> filterByStatus(CandidateStatus status) {
         return candidateRepository.findByStatus(status);
     }
@@ -100,6 +136,17 @@ public class CandidateService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 更新候选人状态，包含分布式锁和状态转换校验，并记录事件溯源。
+     *
+     * @param candidateId 候选人 ID
+     * @param newStatus   目标状态
+     * @param actor       操作人
+     * @param reason      变更原因
+     * @return 更新后的候选人
+     * @throws IllegalArgumentException 候选人不存在时抛出
+     * @throws IllegalStateException    状态转换非法或获取锁超时时抛出
+     */
     public Candidate updateStatus(String candidateId, CandidateStatus newStatus, String actor, String reason) {
         String lockKey = LOCK_PREFIX + candidateId;
         String lockValue = UUID.randomUUID().toString();
@@ -184,6 +231,12 @@ public class CandidateService {
         }
     }
 
+    /**
+     * 对候选人执行 AI 资质评定并保存结果。
+     *
+     * @param candidateId 候选人 ID
+     * @throws IllegalArgumentException 候选人不存在时抛出
+     */
     public void runAiQualify(String candidateId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("候选人不存在: " + candidateId));
@@ -194,10 +247,22 @@ public class CandidateService {
         log.info("AI qualify complete for {}: score={}", candidateId, aiResult.getScore());
     }
 
+    /**
+     * 统计指定岗位的候选人数量。
+     *
+     * @param position 岗位名称
+     * @return 候选人数量
+     */
     public long countByPosition(String position) {
         return candidateRepository.countByPosition(position);
     }
 
+    /**
+     * 获取指定岗位各状态的候选人数量分布。
+     *
+     * @param position 岗位名称
+     * @return 状态名称到数量的映射
+     */
     public Map<String, Long> getStatusCountByPosition(String position) {
         Map<String, Long> counts = new HashMap<>();
         for (CandidateStatus status : CandidateStatus.values()) {

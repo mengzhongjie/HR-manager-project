@@ -27,7 +27,11 @@ public class PositionEventService {
         this.mapper.registerModule(new JavaTimeModule());
     }
 
-    /** 异步处理：清除缓存 → 通过 RabbitMQ 广播通知其他实例 */
+    /**
+     * 异步处理岗位变更事件：清除本地缓存并通过 RabbitMQ 广播通知其他实例。
+     *
+     * @param event 岗位变更事件
+     */
     @Async("positionEventExecutor")
     @EventListener
     public void handlePositionChange(PositionChangeEvent event) {

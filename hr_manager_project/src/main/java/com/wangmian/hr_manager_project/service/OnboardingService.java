@@ -31,6 +31,15 @@ public class OnboardingService {
         this.candidateService = candidateService;
     }
 
+    /**
+     * 为已接受 Offer 的候选人创建入职登记，并更新候选人状态为已入职。
+     *
+     * @param offerId   Offer ID
+     * @param onboarding 入职登记对象
+     * @return 保存后的入职记录
+     * @throws IllegalArgumentException Offer 或候选人不存在时抛出
+     * @throws IllegalStateException    Offer 未被接受时抛出
+     */
     public Onboarding createOnboarding(String offerId, Onboarding onboarding) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offer不存在"));
@@ -55,10 +64,22 @@ public class OnboardingService {
         return saved;
     }
 
+    /**
+     * 根据候选人 ID 查询入职登记。
+     *
+     * @param candidateId 候选人 ID
+     * @return 入职记录 Optional
+     */
     public Optional<Onboarding> findByCandidateId(String candidateId) {
         return onboardingRepository.findByCandidateId(candidateId);
     }
 
+    /**
+     * 根据 ID 查询入职登记。
+     *
+     * @param id 入职记录 ID
+     * @return 入职记录 Optional
+     */
     public Optional<Onboarding> findById(String id) {
         return onboardingRepository.findById(id);
     }

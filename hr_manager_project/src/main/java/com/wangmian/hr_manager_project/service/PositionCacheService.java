@@ -30,7 +30,12 @@ public class PositionCacheService {
         this.mapper.registerModule(new JavaTimeModule());
     }
 
-    /** Cache-Aside: 读缓存 → 未命中则查数据库 → 写入缓存 → 返回 */
+    /**
+     * Cache-Aside 模式：读缓存，未命中则查数据库再写入缓存后返回。
+     *
+     * @param dbFallback 数据库查询回调
+     * @return 岗位列表
+     */
     public List<Position> getPositions(Supplier<List<Position>> dbFallback) {
         try {
             String cached = redis.opsForValue().get(CACHE_KEY);
@@ -58,7 +63,9 @@ public class PositionCacheService {
         return positions != null ? positions : Collections.emptyList();
     }
 
-    /** 使缓存失效（写操作后调用） */
+    /**
+     * 使岗位缓存失效（写操作后调用）。
+     */
     public void evictPositionCache() {
         try {
             redis.delete(CACHE_KEY);

@@ -47,14 +47,22 @@ public class ResumeSubmitFallbackService {
         this.mapper.registerModule(new JavaTimeModule());
     }
 
-    /** 第二级降级：写入 Redis List */
+    /**
+     * 第二级降级处理：将简历提交消息写入 Redis List
+     *
+     * @param msgJson JSON 格式的简历提交消息
+     */
     public void submitToRedis(String msgJson) {
         redis.opsForList().leftPush(REDIS_FALLBACK_KEY, msgJson);
         redis.expire(REDIS_FALLBACK_KEY, Duration.ofHours(1));
         log.info("Resume submitted to Redis fallback queue");
     }
 
-    /** 第三级兜底：直接写入 MongoDB */
+    /**
+     * 第三级兜底处理：将简历提交消息直接写入 MongoDB
+     *
+     * @param msg 简历提交消息，包含 seekerId、position、candidateJson
+     */
     public void submitDirect(Map<String, Object> msg) {
         try {
             String seekerId = (String) msg.get("seekerId");
@@ -72,7 +80,9 @@ public class ResumeSubmitFallbackService {
         }
     }
 
-    /** 定时消费 Redis 降级队列 */
+    /**
+     * 定时消费 Redis 降级队列中的积压消息，批量写入 MongoDB
+     */
     @Scheduled(fixedDelay = 5000)
     public void consumeRedisFallback() {
         try {

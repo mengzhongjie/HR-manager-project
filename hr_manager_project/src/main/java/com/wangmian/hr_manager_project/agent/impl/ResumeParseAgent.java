@@ -42,12 +42,29 @@ public class ResumeParseAgent implements HrAgent<String, Candidate> {
         this.mapper = new ObjectMapper();
     }
 
+    /**
+     * 获取 Agent 名称
+     *
+     * @return Agent 名称 "resume-parse"
+     */
     @Override
     public String getAgentName() { return "resume-parse"; }
 
+    /**
+     * 判断 Agent 是否启用
+     *
+     * @return 始终返回 true（启用状态由 @ConditionalOnProperty 控制）
+     */
     @Override
     public boolean isEnabled() { return true; }
 
+    /**
+     * 执行简历解析，将提取的文本解析为候选人对象
+     * <p>根据配置选择模拟模式（正则解析）或调用真实 AI 进行解析</p>
+     *
+     * @param extractedText 从简历文件中提取的原始文本
+     * @return 结构化后的候选人信息
+     */
     @Override
     public Candidate execute(String extractedText) {
         if (mockMode || apiKey == null || apiKey.isEmpty()) {

@@ -27,6 +27,15 @@ public class OfferService {
         this.candidateService = candidateService;
     }
 
+    /**
+     * 为指定候选人创建 Offer，校验候选人状态和日期有效性，并更新候选人状态为 Offer 已发。
+     *
+     * @param candidateId 候选人 ID
+     * @param offer       Offer 对象
+     * @return 保存后的 Offer
+     * @throws IllegalArgumentException 候选人不存在或日期无效时抛出
+     * @throws IllegalStateException    候选人状态不是 WAITING_OFFER 时抛出
+     */
     public Offer createOffer(String candidateId, Offer offer) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("候选人不存在"));
@@ -51,18 +60,44 @@ public class OfferService {
         return saved;
     }
 
+    /**
+     * 根据候选人 ID 查询 Offer。
+     *
+     * @param candidateId 候选人 ID
+     * @return Offer Optional
+     */
     public Optional<Offer> findByCandidateId(String candidateId) {
         return offerRepository.findByCandidateId(candidateId);
     }
 
+    /**
+     * 根据 Offer ID 查询 Offer。
+     *
+     * @param id Offer ID
+     * @return Offer Optional
+     */
     public Optional<Offer> findById(String id) {
         return offerRepository.findById(id);
     }
 
+    /**
+     * 获取所有 Offer 记录，按创建时间降序排列。
+     *
+     * @return Offer 列表
+     */
     public List<Offer> findAll() {
         return offerRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * 求职者响应 Offer（接受或拒绝），更新 Offer 状态并同步更新候选人状态。
+     *
+     * @param offerId  Offer ID
+     * @param accepted 是否接受
+     * @param actor    操作人
+     * @return 更新后的 Offer
+     * @throws IllegalArgumentException Offer 不存在时抛出
+     */
     public Offer respondToOffer(String offerId, boolean accepted, String actor) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offer不存在"));

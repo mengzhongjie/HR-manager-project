@@ -23,6 +23,13 @@ public class ResumeTextExtractionService {
         this.ocrService = ocrService;
     }
 
+    /**
+     * 从 MultipartFile 中提取 PDF 文本内容
+     *
+     * @param file 上传的 PDF 文件
+     * @return 提取的文本内容
+     * @throws IllegalArgumentException PDF 解析失败或内容为空时抛出
+     */
     public String extractText(MultipartFile file) {
         try {
             byte[] bytes = file.getBytes();
@@ -35,6 +42,13 @@ public class ResumeTextExtractionService {
         }
     }
 
+    /**
+     * 从 File 对象中提取 PDF 文本内容
+     *
+     * @param file PDF 文件
+     * @return 提取的文本内容
+     * @throws IllegalArgumentException PDF 解析失败或内容为空时抛出
+     */
     public String extractText(File file) {
         try {
             byte[] bytes = Files.readAllBytes(file.toPath());

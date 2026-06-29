@@ -42,12 +42,29 @@ public class CandidateQualifyAgent implements HrAgent<Candidate, AiQualification
         this.mapper = new ObjectMapper();
     }
 
+    /**
+     * 获取 Agent 名称
+     *
+     * @return Agent 名称 "candidate-qualify"
+     */
     @Override
     public String getAgentName() { return "candidate-qualify"; }
 
+    /**
+     * 判断 Agent 是否启用
+     *
+     * @return 始终返回 true（启用状态由 @ConditionalOnProperty 控制）
+     */
     @Override
     public boolean isEnabled() { return true; }
 
+    /**
+     * 执行候选人资质评估，根据候选人信息给出评分和推荐意见
+     * <p>根据配置选择模拟模式（规则评分）或调用真实 AI 进行评估</p>
+     *
+     * @param candidate 候选人信息
+     * @return 资质评估结果，包含评分和推荐操作
+     */
     @Override
     public AiQualification execute(Candidate candidate) {
         if (mockMode || apiKey == null || apiKey.isEmpty()) {
